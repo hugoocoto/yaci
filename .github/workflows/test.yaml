@@ -14,8 +14,7 @@ jobs:
         run: |
           make X=${{ matrix.lang }} CC=clang
           make test
-          ./test
-          ./tests/all.sh
+
   ubuntu:
     strategy:
       matrix:
@@ -29,5 +28,3 @@ jobs:
         run: |
           make X=${{ matrix.lang }} CC=${{ matrix.cc }}
           make test
-          ./test
-          ./tests/all.sh

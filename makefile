@@ -6,8 +6,8 @@ FLAGS = -Wall -Wextra -g
 LIBS = 
 INCLUDES = -Isrc
 
-SRC = $(wildcard src/*.c)
-OBJ = $(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRC))
+SRC = $(wildcard src/*.c) src/lex.c
+OBJ = $(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRC)) obj/lex.o
 HEADERS = $(wildcard src/*.h)
 
 .PHONY: all clean package compile test
@@ -23,11 +23,16 @@ $(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CC) $(FLAGS) -x $(X) $(INCLUDES) -c $< -o $@ 
 
+src/lex.c: src/lex.l $(HEADERS)
+	flex -o src/lex.c src/lex.l 
+
 clean:
 	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test
 
 test: $(SRC)
 	$(CC) $(FLAGS) -ggdb -DTEST $(INCLUDES) $^ -o test $(LIBS)
+	./test
+	./tests/all.sh
 
 package: $(OUT).zip
 
