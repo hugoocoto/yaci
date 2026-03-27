@@ -1,0 +1,33 @@
+name: yaci tests
+on: [push, pull_request]
+
+jobs:
+  macos:
+    strategy:
+      matrix:
+        lang: [c, c++]
+    runs-on: macos-latest
+    steps:
+      - name: Clone GIT repo
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          make X=${{ matrix.lang }} CC=clang
+          make test
+          ./test
+          ./tests/all.sh
+  ubuntu:
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+        lang: [c, c++]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone GIT repo
+        uses: actions/checkout@v4
+      - name: Build tests
+        run: |
+          make X=${{ matrix.lang }} CC=${{ matrix.cc }}
+          make test
+          ./test
+          ./tests/all.sh
