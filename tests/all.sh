@@ -14,10 +14,7 @@ TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file1.yc || FAILED=$(($FAILED + 1));
 TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file2.yc || FAILED=$(($FAILED + 1));
 TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file3.yc || FAILED=$(($FAILED + 1));
 
-if [[ -z "$FAILED" ]]; then
-    echo "failed tests: $FAILD" 
-else
-    echo "passed tests: $TOTAL" 
-fi
+echo "failed tests: $FAILED" 
+echo "passed tests: $TOTAL" 
 
-exit 0
+exit $FAILED

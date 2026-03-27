@@ -31,8 +31,7 @@ clean:
 
 test: $(SRC)
 	$(CC) $(FLAGS) -ggdb -DTEST $(INCLUDES) $^ -o test $(LIBS)
-	./test
-	./tests/all.sh
+	./test && ./tests/all.sh
 
 package: $(OUT).zip
 
