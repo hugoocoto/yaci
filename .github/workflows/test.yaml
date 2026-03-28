@@ -3,7 +3,6 @@ on: [push, pull_request]
 
 jobs:
   macos:
-    strategy:
     runs-on: macos-latest
     steps:
       - name: Clone GIT repo
