@@ -9,7 +9,7 @@
 /* numbers */
 DECIMAL [[:digit:]]+
 FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})
-EXP [eE][-+]*{DECIMAL}
+EXP [eE][-+]?{DECIMAL}
 
 /* id */
 ID [[:alpha:]_][[:alnum:]_]* 

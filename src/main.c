@@ -5,6 +5,13 @@
 
 #include "flag.h"
 
+void
+repl()
+{
+        extern int yylex();
+        yylex();
+}
+
 int
 parse(char *filename)
 {
@@ -25,10 +32,10 @@ parse(char *filename)
 int
 main(int argc, char **argv)
 {
-        const char *var;
+        const char *norepl;
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
-        flag_add(&var, "--var", .help = "var var");
+        flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);
@@ -39,6 +46,8 @@ main(int argc, char **argv)
         for (int i = 1; i < argc; i++) {
                 parse(argv[i]);
         }
+
+        if (!norepl) repl();
 
         return 0;
 }
