@@ -120,24 +120,24 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-#define flag_list(x, ...) (char *[]){ x, ##__VA_ARGS__, 0 }
+#define flag_list(x, ...) (const char *[]){ x, ##__VA_ARGS__, 0 }
 
 #define MAX_FLAG_COUNT 4
 
 struct flag_opts {
-        const char *opt;  // Flag (--help)
-        const char *abbr; // Flag abbreviation (-h)
-        char *help;       // Help message for the flag
-        int nargs;        // Number of args to catch (max 1)
-        char *defaults;   // Default value as string (default is a keyword)
-        int required;     // Set to 1 if the flag must be set
-        char **var;       // Stores the pointer to the variable where the value should be set
+        const char *opt;      // Flag (--help)
+        const char *abbr;     // Flag abbreviation (-h)
+        const char *help;     // Help message for the flag
+        int nargs;            // Number of args to catch (max 1)
+        const char *defaults; // Default value as string (default is a keyword)
+        int required;         // Set to 1 if the flag must be set
+        const char **var;     // Stores the pointer to the variable where the value should be set
 };
 
 static struct program_opts {
-        char *name;         // program name. Used in the help message
-        char *help;         // program help. Used in the help message
-        char **positionals; // possitional arguments (check that argc -1 >= len(it))
+        const char *name;         // program name. Used in the help message
+        const char *help;         // program help. Used in the help message
+        const char **positionals; // possitional arguments (check that argc -1 >= len(it))
 } flag_prog = { 0 };
 
 
@@ -205,7 +205,7 @@ prog_help:
 }
 
 static void
-__flag_add(char **var, struct flag_opts opts)
+__flag_add(const char **var, struct flag_opts opts)
 {
         if (flag_flags.count == MAX_FLAG_COUNT) {
                 fprintf(stderr, "Flag error: Max flag count reached!"
@@ -325,7 +325,7 @@ flag_free()
         for (int j = 0; j < flag_flags.count; j++) {
                 fopt = flag_flags.flags + j;
                 if (fopt->var == NULL || *fopt->var != NULL) continue;
-                free(*fopt->var);
+                free((void *) *fopt->var);
         }
 }
 

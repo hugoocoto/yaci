@@ -25,7 +25,7 @@ parse(char *filename)
 int
 main(int argc, char **argv)
 {
-        char *var;
+        const char *var;
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&var, "--var", .help = "var var");

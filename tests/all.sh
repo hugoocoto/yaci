@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 
 # Execute all tests
+#
+# Run all the files in ./tests that are .yc files
 
 SCRIPT_DIR="$( cd "$( dirname "$BASH_SOURCE[0]" )" && pwd )"
 cd "$SCRIPT_DIR/.."
 
-make 
+make >> /dev/null
 
 FAILED=0
 TOTAL=0
 
-TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file1.yc || FAILED=$(($FAILED + 1));
-TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file2.yc || FAILED=$(($FAILED + 1));
-TOTAL=$(($TOTAL + 1)); ./yaci ./tests/file3.yc || FAILED=$(($FAILED + 1));
+for file in ./tests/*.yc; do
+    TOTAL=$(($TOTAL + 1)); ./yaci $file || FAILED=$(($FAILED + 1));
+done
 
-echo "failed tests: $FAILED" 
-echo "passed tests: $TOTAL" 
+echo
+echo "TEST SUMMARY"
+echo "[failed]: $FAILED" 
+echo "[passed]: $TOTAL" 
 
 exit $FAILED

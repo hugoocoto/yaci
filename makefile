@@ -2,7 +2,7 @@ OUT = yaci
 CC = cc
 OBJ_DIR = obj
 X = c
-FLAGS = -Wall -Wextra -g
+FLAGS = -Wall -Wextra -g -Wno-missing-field-initializers -Werror
 LIBS = 
 INCLUDES = -Isrc
 
@@ -29,8 +29,9 @@ src/lex.c: src/lex.l $(HEADERS)
 clean:
 	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test
 
-test: $(SRC)
-	$(CC) $(FLAGS) -ggdb -DTEST $(INCLUDES) $^ -o test $(LIBS)
+test: $(SRC) 
+	make clean
+	$(CC) $(FLAGS) -ggdb -DTEST $(INCLUDES) $^ -o $@ $(LIBS)
 	./test && ./tests/all.sh
 
 package: $(OUT).zip
