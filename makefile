@@ -1,7 +1,6 @@
 OUT = yaci
 CC = cc
 OBJ_DIR = obj
-X = c
 FLAGS = -Wall -Wextra -g -Wno-missing-field-initializers -Wno-c99-designator -Werror 
 LIBS = -lm
 INCLUDES = -Isrc
@@ -21,7 +20,7 @@ $(OUT): $(OBJ)
 
 $(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS) src/parser.tab.h
 	@mkdir -p $(dir $@)
-	$(CC) $(FLAGS) -x $(X) $(INCLUDES) -c $< -o $@ 
+	$(CC) $(FLAGS) $(INCLUDES) -c $< -o $@ 
 
 src/lex.c: src/lex.l $(HEADERS) src/parser.tab.h
 	flex -o src/lex.c src/lex.l 

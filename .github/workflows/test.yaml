@@ -5,26 +5,24 @@ jobs:
   macos:
     strategy:
       matrix:
-        lang: [c, c++]
     runs-on: macos-latest
     steps:
       - name: Clone GIT repo
         uses: actions/checkout@v4
       - name: Run tests
         run: |
-          make X=${{ matrix.lang }} CC=clang
+          make CC=clang
           make test
 
   ubuntu:
     strategy:
       matrix:
         cc: [gcc, clang]
-        lang: [c, c++]
     runs-on: ubuntu-latest
     steps:
       - name: Clone GIT repo
         uses: actions/checkout@v4
       - name: Build tests
         run: |
-          make X=${{ matrix.lang }} CC=${{ matrix.cc }}
+          make CC=${{ matrix.cc }}
           make test
