@@ -26,7 +26,7 @@ src/lex.c: src/lex.l $(HEADERS) src/parser.tab.h
 	flex -o src/lex.c src/lex.l 
 
 src/parser.tab.c: src/parser.tab.h src/parser.y $(HEADERS) 
-	bison -bsrc/parser -d src/parser.y -Werror
+	bison -bsrc/parser -d src/parser.y 
 
 src/parser.tab.h: src/parser.y $(HEADERS) 
 	bison -bsrc/parser -d src/parser.y -Werror
