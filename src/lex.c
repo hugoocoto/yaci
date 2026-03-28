@@ -455,7 +455,7 @@ char *yytext;
 #line 1 "src/lex.l"
 #define YY_NO_INPUT 1
 #line 6 "src/lex.l"
-#include "defs.h"
+#include "./parser.tab.h"
 #line 459 "src/lex.c"
 /* numbers */
 /* id */
@@ -739,22 +739,22 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 25 "src/lex.l"
-{ printf("+ Decimal: %s -- %d\n", yytext, TOK_DECIMAL); }
+{ yylval.val = (double)atoi(yytext); return NUM; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 26 "src/lex.l"
-{ printf("+ Float: %s -- %d\n", yytext, TOK_FLOAT); }
+{ yylval.val = (double)atof(yytext); return NUM; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 27 "src/lex.l"
-{ printf("+ Id: %s -- %d\n", yytext, TOK_ID); }
+{ return VAR; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 28 "src/lex.l"
-{ printf("+ `%c`: %s -- %d\n", *yytext, yytext, *yytext); }
+{ return *yytext; }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
@@ -765,7 +765,7 @@ YY_RULE_SETUP
 case 6:
 YY_RULE_SETUP
 #line 30 "src/lex.l"
-{ printf("! Error: unknown token: %s\n", yytext); exit(1); }
+{ printf("! Error: unknown token: %s\n", yytext); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP

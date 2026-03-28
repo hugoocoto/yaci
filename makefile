@@ -3,12 +3,12 @@ CC = cc
 OBJ_DIR = obj
 X = c
 FLAGS = -Wall -Wextra -g -Wno-missing-field-initializers -Wno-c99-designator -Werror 
-LIBS = 
+LIBS = -lm
 INCLUDES = -Isrc
 
-SRC = $(wildcard src/*.c) src/lex.c
-OBJ = $(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRC)) obj/lex.o
-HEADERS = $(wildcard src/*.h)
+SRC = $(wildcard src/*.c) src/lex.c src/parser.tab.c
+OBJ = $(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRC)) obj/lex.o obj/parser.tab.o
+HEADERS = $(wildcard src/*.h) 
 
 .PHONY: all clean package compile test
 
@@ -19,15 +19,21 @@ compile: $(OUT)
 $(OUT): $(OBJ) 
 	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
-$(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS)
+$(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS) src/parser.tab.h
 	@mkdir -p $(dir $@)
 	$(CC) $(FLAGS) -x $(X) $(INCLUDES) -c $< -o $@ 
 
-src/lex.c: src/lex.l $(HEADERS)
+src/lex.c: src/lex.l $(HEADERS) src/parser.tab.h
 	flex -o src/lex.c src/lex.l 
 
+src/parser.tab.c: src/parser.tab.h src/parser.y $(HEADERS) 
+	bison -bsrc/parser -d src/parser.y -Werror
+
+src/parser.tab.h: src/parser.y $(HEADERS) 
+	bison -bsrc/parser -d src/parser.y -Werror
+
 clean:
-	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test
+	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test ./src/parser.tab.* ./src/lex.c
 
 test: $(SRC) 
 	make clean

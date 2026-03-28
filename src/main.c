@@ -8,14 +8,14 @@
 void
 repl()
 {
-        extern int yylex();
-        yylex();
+        extern int yyparse();
+        yyparse();
 }
 
 int
 parse(char *filename)
 {
-        extern int yylex();
+        extern int yyparse();
         extern int open_file(char *);
         extern void close_file();
 
@@ -24,18 +24,24 @@ parse(char *filename)
                 perror(filename);
                 return 1;
         }
-        yylex();
+        yyparse();
         close_file();
         return 0;
 }
+
+const char *pretty;
 
 int
 main(int argc, char **argv)
 {
         const char *norepl;
+        const char *nopretty;
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
+        flag_add(&nopretty, "--no-pretty", .help = "Do not use pretty mode");
+
+        pretty = (const char *) (nopretty ? 0L : 1L);
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);

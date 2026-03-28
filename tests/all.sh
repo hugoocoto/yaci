@@ -7,7 +7,7 @@
 SCRIPT_DIR="$( cd "$( dirname "$BASH_SOURCE[0]" )" && pwd )"
 cd "$SCRIPT_DIR/.."
 
-make >> /dev/null
+make compile >> /dev/null
 
 FAILED=0
 TOTAL=0

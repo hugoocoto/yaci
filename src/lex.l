@@ -3,7 +3,7 @@
 %option nounput
 
 %{
-#include "defs.h"
+#include "./parser.tab.h"
 %}
 
 /* numbers */
@@ -22,12 +22,12 @@ SCT [-+/*^(){}\[\];.,=]
 
 %%
 
-{DECIMAL}   { printf("+ Decimal: %s -- %d\n", yytext, TOK_DECIMAL); }
-{FLOAT}     { printf("+ Float: %s -- %d\n", yytext, TOK_FLOAT); }
-{ID}        { printf("+ Id: %s -- %d\n", yytext, TOK_ID); }
-{SCT}       { printf("+ `%c`: %s -- %d\n", *yytext, yytext, *yytext); }
+{DECIMAL}   { yylval.val = (double)atoi(yytext); return NUM; }
+{FLOAT}     { yylval.val = (double)atof(yytext); return NUM; }
+{ID}        { return VAR; }
+{SCT}       { return *yytext; }
 {WS}        { }
-.           { printf("! Error: unknown token: %s\n", yytext); exit(1); }
+.           { printf("! Error: unknown token: %s\n", yytext); }
 
 %%
 

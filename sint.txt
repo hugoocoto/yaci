@@ -1,0 +1,13 @@
+
+PROGRAM: 
+
+
+EXPR: EXPR + EXPR
+    | EXPR - EXPR
+    | EXPR * EXPR
+    | EXPR / EXPR
+    | EXPR ^ EXPR
+    | VAR
+    | FUNC
+
+     
