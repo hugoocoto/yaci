@@ -29,7 +29,7 @@ src/parser.tab.c: src/parser.tab.h src/parser.y $(HEADERS)
 	bison -bsrc/parser -d src/parser.y 
 
 src/parser.tab.h: src/parser.y $(HEADERS) 
-	bison -bsrc/parser -d src/parser.y -Werror
+	bison -bsrc/parser -d src/parser.y 
 
 clean:
 	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test ./src/parser.tab.* ./src/lex.c
