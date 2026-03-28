@@ -2,16 +2,6 @@ name: yaci tests
 on: [push, pull_request]
 
 jobs:
-  macos:
-    runs-on: macos-latest
-    steps:
-      - name: Clone GIT repo
-        uses: actions/checkout@v4
-      - name: Run tests
-        run: |
-          make CC=clang
-          make test
-
   ubuntu:
     strategy:
       matrix:

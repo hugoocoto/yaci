@@ -4,7 +4,7 @@ Yet Another Calculator Interpreter
 
 ## Build
 
-You can compile it from source to both Linux and Mac.
+You can compile it from source 
 
 ```sh
 make
