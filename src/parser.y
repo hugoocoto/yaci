@@ -1,6 +1,7 @@
 %{
 #include <math.h>
 #include <stdio.h>
+
 #include "ts.h"
 
 extern void yyerror (char *);
@@ -8,8 +9,8 @@ extern int yylex();
 %}
 
 %union {
-double val;
-struct TS_Entry *tptr;
+    double val;
+    struct TS_Entry *tptr;
 }
 
 %token <val> NUM        
@@ -25,22 +26,37 @@ struct TS_Entry *tptr;
 
 %%
 
-input: line 
-    | input line 
+program: 
+    | program line 
     ;
 
-line: exp echo { printf("%g\n", $1); }
+line: 
+    exp '\n' { printf("%g\n", $1); }
+    | exp ';' '\n' { }
     | error { }
-    ;
-
-echo: ';' 
+    | ';' '\n'
+    | '\n'
     ;
 
 exp: 
     NUM { $$ = $1; }
-    | VAR { $$ = $1->as.value; }
-    | VAR '=' exp { $$ = $3; $1->as.value = $3; }
-    | FNCT '(' exp ')' { $$ = (*($1->as.ptr))($3); }
+
+    | VAR { 
+        if (!$1->assigned) { yyerror("can not read value from non-initialized var"); YYERROR; }
+        if ($1->type == CMD) {
+            $$ = (double)((builtin_cmd) $1->as.ptr)();
+        } else {
+            $$ = $1->as.value; 
+        }
+    }
+
+    | VAR '=' exp { 
+        if ($1->constant) { yyerror("can not assign to constant var"); YYERROR; }
+        if (!$1->assigned) { $1->assigned = true; }
+        $$ = $1->as.value = $3;
+          
+    }
+
     | exp '+' exp { $$ = $1 + $3; }
     | exp '-' exp { $$ = $1 - $3; }
     | exp '*' exp { $$ = $1 * $3; }
@@ -49,7 +65,6 @@ exp:
     | exp '^' exp { $$ = pow ($1, $3); }
     | '(' exp ')' { $$ = $2; }
     ;
-
 
 %%
 

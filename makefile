@@ -34,8 +34,7 @@ src/parser.tab.h: src/parser.y $(HEADERS)
 clean:
 	rm -rf $(OBJ_DIR) $(OUT) $(OUT).zip test ./src/parser.tab.* ./src/lex.c
 
-test: $(SRC) 
-	make clean
+test: $(SRC) src/lex.c src/parser.tab.c
 	$(CC) $(FLAGS) -ggdb -DTEST $(INCLUDES) $^ -o $@ $(LIBS)
 	./test && ./tests/all.sh
 

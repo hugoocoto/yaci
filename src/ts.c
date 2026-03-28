@@ -1,68 +1,92 @@
-#include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#define memdup(x) memcpy(malloc(sizeof (x)), &(x), sizeof(x))
+#define memdup(x) memcpy(malloc(sizeof(x)), &(x), sizeof(x))
 
-#include "ts.h"
 #include "bt.h"
+#include "parser.tab.h"
+#include "ts.h"
 
-/* Tabla de simbolos */
-static BT table = { 0 };
+static BT ts = { 0 };
 
-/* Añade los kwords a la tabla de simbolos. Reduce los kwords al tamaño maximo
- * de lexema, de tal manera que se puedan identificar aun siendo mas grandes de
- * lo posible. */
+int
+builtin_clear()
+{
+        printf("\033[H\033[2J");
+        fflush(stdout);
+        return 0;
+}
+
 __attribute__((constructor)) static void
 insert_keywords()
 {
+#define ts_add_num_const(strlit, val) \
+        ts_add((strlit), (TS_Entry) { .as.value = (val), .assigned = 1, .constant = 1, .type = NUM })
+
+        /* Constants from math.h */
+        ts_add_num_const("e", M_E);           /* e */
+        ts_add_num_const("log2e", M_LOG2E);   /* log_2 e */
+        ts_add_num_const("log10e", M_LOG10E); /* log_10 e */
+        ts_add_num_const("ln2", M_LN2);       /* log_e 2 */
+        ts_add_num_const("ln10", M_LN10);     /* log_e 10 */
+        ts_add_num_const("pi", M_PI);         /* pi */
+        ts_add_num_const("pi_2", M_PI_2);     /* pi/2 */
+        ts_add_num_const("pi_4", M_PI_4);     /* pi/4 */
+        ts_add_num_const("sqrt2", M_SQRT2);   /* sqrt(2) */
+
+        /* This is the funniest thing I did in the last 10 hours */
+        ts_add_num_const("zero", 0);
+        ts_add_num_const("one", 1);
+        ts_add_num_const("two", 2);
+        ts_add_num_const("three", 3);
+        ts_add_num_const("four", 4);
+        ts_add_num_const("five", 5);
+        ts_add_num_const("six", 6);
+        ts_add_num_const("seven", 7);
+        ts_add_num_const("eight", 8);
+        ts_add_num_const("nine", 9);
+        ts_add_num_const("ten", 10);
+
+        ts_add("clear", (TS_Entry) { .as.ptr = builtin_clear, .assigned = 1, .constant = 1, .type = CMD });
 }
 
-/* Borra la tabla de simbolos */
 __attribute__((destructor)) static void
 delete_table()
 {
-        bt_destroy(&table);
+        bt_destroy(&ts);
 }
 
-/* Pinta la tabla de simbolos */
 void
 ts_print()
 {
         extern char *pretty;
         printf("----| Tabla de simbolos |----\n");
-        pretty ? bt_write_pretty(stdout, &table) : bt_write(stdout, &table);
+        pretty ? bt_write_pretty(stdout, &ts) : bt_write(stdout, &ts);
         printf("-----------------------------\n");
 }
 
-/* Añade un par key-entry a la tabla de simbolos. key es la llave que se indexa
- * en el arbol, y se copia en el heap. La entrada tambien se duplica en el heap.
- * Si ya hay una entrada con la misma key, se reemplaza el valor con entry. */
 void
 ts_add(const char *key, TS_Entry entry)
 {
-        bt_add(&table, key, memdup(entry));
+        bt_add(&ts, key, memdup(entry));
 }
 
-/* Obtiene el valor dado una key, o NULL si no existe */
 TS_Entry *
 ts_get(const char *key)
 {
-        return bt_get(&table, key);
+        return bt_get(&ts, key);
 }
 
-/* Obtiene la direccion de memoria donde reside la llave de la tabla de simbolos
- * dada una string cuyo contenido es igual al de la llave de la tabla de
- * simbolos */
 char *
 ts_get_key_addr(const char *key)
 {
-        return bt_get_key_addr(&table, key);
+        return bt_get_key_addr(&ts, key);
 }
 
 /* BT stuff under here */
 
-/* Se añade un callback para destruir la entrada de la tabla de simbolos */
 #define BT_VALUE_DELETE value_delete_callback
 void
 value_delete_callback(void *value)

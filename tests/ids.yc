@@ -1,7 +1,7 @@
-a
-aaaaaaaa
-a_a
-a____a
-a_
-_a
-AAA
+a = 0;
+aaaaaaaa = 0;
+a_a = 0;
+a____a = 0;
+a_ = 0;
+_a = 0;
+AAA = 0;

@@ -19,11 +19,11 @@ parse(char *filename)
         extern int open_file(char *);
         extern void close_file();
 
-        printf("filename: %s\n", filename);
         if (open_file(filename)) {
                 perror(filename);
                 return 1;
         }
+
         yyparse();
         close_file();
         return 0;
@@ -39,7 +39,7 @@ main(int argc, char **argv)
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
-        flag_add(&nopretty, "--no-pretty", .help = "Do not use pretty mode");
+        flag_add(&nopretty, "--plain", .help = "Do not use pretty mode");
 
         pretty = (const char *) (nopretty ? 0L : 1L);
 
@@ -59,6 +59,8 @@ main(int argc, char **argv)
 }
 
 #else // TEST
+
+const char *pretty = 0;
 
 int
 main()
