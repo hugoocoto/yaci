@@ -5,17 +5,20 @@
 
 #include "flag.h"
 
+extern int yyparse();
+extern int yylex_destroy();
+
 void
 repl()
 {
-        extern int yyparse();
+        printf("REPL:\n");
         yyparse();
+        yylex_destroy();
 }
 
 int
 parse(char *filename)
 {
-        extern int yyparse();
         extern int open_file(char *);
         extern void close_file();
 
@@ -26,6 +29,7 @@ parse(char *filename)
 
         yyparse();
         close_file();
+        yylex_destroy();
         return 0;
 }
 

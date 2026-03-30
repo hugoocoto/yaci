@@ -24,12 +24,15 @@ WS [ \t\f\r\v]+
 /* Single Char Token */
 SCT [+/*^(){}\[\];.,=-]
 
+ISEQ "eq!"
+
 %%
 
 {NUMBER}    { yylval.val = strtod(yytext, NULL); return NUM; }
 {ID}        { yylval.tptr = register_id(); return VAR; }
 {SCT}       { return *yytext; }
 {WS}        { }
+{ISEQ}    { return ASSERT; }
 "\n"        { return '\n'; }
 .           { printf("! Error: unknown token: %s\n", yytext); }
 
@@ -47,7 +50,7 @@ int open_file(char *filename)
 
 void close_file() 
 {
-    if (yyin && yyin != stdin) {
+    if (yyin && fileno(yyin) != fileno(stdin)) {
         fclose(yyin);
         yyin = stdin;
     }
