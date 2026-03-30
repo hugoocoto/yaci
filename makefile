@@ -1,7 +1,7 @@
 OUT = yaci
 CC = cc
 OBJ_DIR = obj
-FLAGS = -Wall -Wextra -g -Wno-missing-field-initializers -Wno-c99-designator -Werror 
+FLAGS = -Wall -Wextra -g -Werror 
 LIBS = -lm
 INCLUDES = -Isrc
 

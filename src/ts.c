@@ -6,24 +6,19 @@
 #define memdup(x) memcpy(malloc(sizeof(x)), &(x), sizeof(x))
 
 #include "bt.h"
-#include "parser.tab.h"
+
+#include "lit.h"
 #include "ts.h"
 
-static BT ts = { 0 };
+#include "parser.tab.h"
 
-int
-builtin_clear()
-{
-        printf("\033[H\033[2J");
-        fflush(stdout);
-        return 0;
-}
+static BT ts = { 0 };
 
 __attribute__((constructor)) static void
 insert_keywords()
 {
 #define ts_add_num_const(strlit, val) \
-        ts_add((strlit), (TS_Entry) { .as.value = (val), .assigned = 1, .constant = 1, .type = NUM })
+        ts_add((strlit), (TS_Entry) { .value = (Lit) { .type = NUM, .as.num = (val) }, .assigned = 1, .constant = 1, .type = NUM })
 
         /* Constants from math.h */
         ts_add_num_const("e", M_E);           /* e */
@@ -48,8 +43,6 @@ insert_keywords()
         ts_add_num_const("eight", 8);
         ts_add_num_const("nine", 9);
         ts_add_num_const("ten", 10);
-
-        ts_add("clear", (TS_Entry) { .as.ptr = builtin_clear, .assigned = 1, .constant = 1, .type = CMD });
 }
 
 __attribute__((destructor)) static void

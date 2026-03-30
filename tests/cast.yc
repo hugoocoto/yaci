@@ -1,0 +1,5 @@
+a = 12.4
+b = a as str
+b eq! "12.4"
+c = b as num
+a eq! c

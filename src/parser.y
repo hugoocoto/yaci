@@ -1,24 +1,27 @@
 %{
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "ts.h"
-
-#define YYERROR_VERBOSE
+#include "lit.h"
 
 extern void yyerror (char *);
 extern int yylex();
 %}
 
 %union {
-    double val;
     struct TS_Entry *tptr;
+    struct Lit val;
+    int type;
 }
 
 %token <val> NUM        
-%token <tptr> VAR FNCT 
+%token <val> STR        
+%token <tptr> VAR
 %token ASSERT        
+%token ERROR        
+%token AS        
+%token <type> TYPE        
 
 %type <val> expr
 
@@ -28,6 +31,9 @@ extern int yylex();
 %left '*' '/'
 %left NEG
 %right '^'
+%right AS
+
+%start program
 
 %%
 
@@ -36,7 +42,11 @@ program:
     ;
 
 line: 
-    expr '\n' { printf("%g\n", $1); }
+    expr '\n' { 
+                printf("=");
+                lit_print($1); 
+                printf("\n"); 
+              }
     | expr ';' '\n' { }
     | error { }
     | ';' '\n'
@@ -45,40 +55,39 @@ line:
 
 expr: 
     NUM { $$ = $1; }
+    | STR { $$ = $1; }
 
     | VAR { 
-        if (!$1->assigned) { yyerror("can not read value from non-initialized var"); YYERROR; }
-        if ($1->type == CMD) {
-            $$ = (double)((builtin_cmd) $1->as.ptr)();
-        } else {
-            $$ = $1->as.value; 
-        }
+        if (!$1->assigned) { yyerror("Can not read value from non-initialized var"); YYERROR; }
+        $$ = $1->value; 
     }
 
     | expr ASSERT expr { 
-        if ($1 != $3) { 
+        if (lit_neq($1, $3)) { 
             // YYERROR;
-            printf("%g eq! %g\n: ", $1, $3);
             yyerror("Values doesn't match\n"); 
             exit(1); 
         } 
         $$ = $1; 
     }
 
+    | expr AS TYPE { 
+        $$ = lit_cast($1, $3); 
+    }
 
     | VAR '=' expr { 
-        if ($1->constant) { yyerror("can not assign to constant var"); YYERROR; }
+        if ($1->constant) { yyerror("Can not assign to constant var"); YYERROR; }
         if (!$1->assigned) { $1->assigned = true; }
-        $$ = $1->as.value = $3;
+        $$ = $1->value = $3;
           
     }
 
-    | expr '+' expr { $$ = $1 + $3; }
-    | expr '-' expr { $$ = $1 - $3; }
-    | expr '*' expr { $$ = $1 * $3; }
-    | expr '/' expr { $$ = $1 / $3; }
-    | '-' expr %prec NEG { $$ = -$2; }
-    | expr '^' expr { $$ = pow($1, $3); }
+    | expr '+' expr { $$ = lit_add($1, $3); }
+    | expr '-' expr { $$ = lit_sub($1, $3); }
+    | expr '*' expr { $$ = lit_mul($1, $3); }
+    | expr '/' expr { $$ = lit_div($1, $3); }
+    | '-' expr %prec NEG { $$ = lit_neg($2); }
+    | expr '^' expr { $$ = lit_pow($1, $3); }
     | '(' expr ')' { $$ = $2; }
     ;
 

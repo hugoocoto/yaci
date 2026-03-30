@@ -3,8 +3,9 @@
 %option nounput
 
 %{
-#include "parser.tab.h"
+#include "lit.h"
 #include "ts.h"
+#include "parser.tab.h"
 
 extern TS_Entry* register_id();
 %}
@@ -15,6 +16,16 @@ DECIMAL [[:digit:]]+
 FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})
 EXP [eE][-+]?{DECIMAL}
 
+/* chars (numbers) */
+CHAR "'"[^']"'"
+
+/* strings */
+STR {DQSTR}|{SQSTR}
+SQSTR "'"{STRCHR}*"'"
+DQSTR "\""{STRCHR}*"\""
+STRCHR {ESCSEQ}|[^\\"\n]
+ESCSEQ "\\"['"?\\0abfnrtv]
+
 /* id */
 ID [[:alpha:]_][[:alnum:]_]* 
 
@@ -24,16 +35,25 @@ WS [ \t\f\r\v]+
 /* Single Char Token */
 SCT [+/*^(){}\[\];.,=-]
 
-ISEQ "eq!"
+ASSERT "eq!"
+AS "as"
+
+TYPE_STR "str"
+TYPE_NUM "num"
 
 %%
 
-{NUMBER}    { yylval.val = strtod(yytext, NULL); return NUM; }
+{TYPE_NUM}  { yylval.type = NUM; return TYPE; }
+{TYPE_STR}  { yylval.type = STR; return TYPE; }
+{AS}        { return AS; }
+{NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
+{CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
+{STR}       { yylval.val = str_to_lit(strdup(yytext)); return NUM; }
 {ID}        { yylval.tptr = register_id(); return VAR; }
 {SCT}       { return *yytext; }
-{WS}        { }
-{ISEQ}    { return ASSERT; }
+{ASSERT}    { return ASSERT; }
 "\n"        { return '\n'; }
+{WS}        { }
 .           { printf("! Error: unknown token: %s\n", yytext); }
 
 %%
