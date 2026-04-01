@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -35,11 +36,21 @@ parse(char *filename)
 
 const char *pretty;
 
+void
+exit_handler(int sig)
+{
+        (void) sig;
+        extern const char *quit_seq;
+        printf("\nMaybe you want to type one of:\n%s\n", quit_seq);
+}
+
 int
 main(int argc, char **argv)
 {
         const char *norepl;
         const char *nopretty;
+
+        signal(SIGINT, exit_handler);
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
@@ -73,3 +84,6 @@ main()
 }
 
 #endif
+
+
+const char *quit_seq = "quit, quiT, quIt, quIT, qUit, qUiT, qUIt, qUIT, Quit, QuiT, QuIt, QuIT, QUit, QUiT, QUIt, QUIT, exit, exiT, exIt, exIT, eXit, eXiT, eXIt, eXIT, Exit, ExiT, ExIt, ExIT, EXit, EXiT, EXIt, EXIT, q, Q, q!, Q!, wq, wQ, Wq, WQ, wq!, wQ!, Wq!, WQ!, :q, :Q, :q!, :Q!, :wq, :wQ, :Wq, :WQ, :wq!, :wQ!, :Wq!, :WQ!, quit(), quiT(), quIt(), quIT(), qUit(), qUiT(), qUIt(), qUIT(), Quit(), QuiT(), QuIt(), QuIT(), QUit(), QUiT(), QUIt(), QUIT(), exit(), exiT(), exIt(), exIT(), eXit(), eXiT(), eXIt(), eXIT(), Exit(), ExiT(), ExIt(), ExIT(), EXit(), EXiT(), EXIt(), EXIT(), q(), Q(), q!(), Q!(), wq(), wQ(), Wq(), WQ(), wq!(), wQ!(), Wq!(), WQ!(), :q(), :Q(), :q!(), :Q!(), :wq(), :wQ(), :Wq(), :WQ(), :wq!(), :wQ!(), :Wq!(), :WQ!(), quit( ), quiT( ), quIt( ), quIT( ), qUit( ), qUiT( ), qUIt( ), qUIT( ), Quit( ), QuiT( ), QuIt( ), QuIT( ), QUit( ), QUiT( ), QUIt( ), QUIT( ), exit( ), exiT( ), exIt( ), exIT( ), eXit( ), eXiT( ), eXIt( ), eXIT( ), Exit( ), ExiT( ), ExIt( ), ExIT( ), EXit( ), EXiT( ), EXIt( ), EXIT( ), q( ), Q( ), q!( ), Q!( ), wq( ), wQ( ), Wq( ), WQ( ), wq!( ), wQ!( ), Wq!( ), WQ!( ), :q( ), :Q( ), :q!( ), :Q!( ), :wq( ), :wQ( ), :Wq( ), :WQ( ), :wq!( ), :wQ!( ), :Wq!( ), :WQ!( ), quit(  ), quiT(  ), quIt(  ), quIT(  ), qUit(  ), qUiT(  ), qUIt(  ), qUIT(  ), Quit(  ), QuiT(  ), QuIt(  ), QuIT(  ), QUit(  ), QUiT(  ), QUIt(  ), QUIT(  ), exit(  ), exiT(  ), exIt(  ), exIT(  ), eXit(  ), eXiT(  ), eXIt(  ), eXIT(  ), Exit(  ), ExiT(  ), ExIt(  ), ExIT(  ), EXit(  ), EXiT(  ), EXIt(  ), EXIT(  ), q(  ), Q(  ), q!(  ), Q!(  ), wq(  ), wQ(  ), Wq(  ), WQ(  ), wq!(  ), wQ!(  ), Wq!(  ), WQ!(  ), :q(  ), :Q(  ), :q!(  ), :Q!(  ), :wq(  ), :wQ(  ), :Wq(  ), :WQ(  ), :wq!(  ), :wQ!(  ), :Wq!(  ), :WQ!(  ), quit(   ), quiT(   ), quIt(   ), quIT(   ), qUit(   ), qUiT(   ), qUIt(   ), qUIT(   ), Quit(   ), QuiT(   ), QuIt(   ), QuIT(   ), QUit(   ), QUiT(   ), QUIt(   ), QUIT(   ), exit(   ), exiT(   ), exIt(   ), exIT(   ), eXit(   ), eXiT(   ), eXIt(   ), eXIT(   ), Exit(   ), ExiT(   ), ExIt(   ), ExIT(   ), EXit(   ), EXiT(   ), EXIt(   ), EXIT(   ), q(   ), Q(   ), q!(   ), Q!(   ), wq(   ), wQ(   ), Wq(   ), WQ(   ), wq!(   ), wQ!(   ), Wq!(   ), WQ!(   ), :q(   ), :Q(   ), :q!(   ), :Q!(   ), :wq(   ), :wQ(   ), :Wq(   ), :WQ(   ), :wq!(   ), :wQ!(   ), :Wq!(   ), :WQ!(   )";

@@ -18,12 +18,17 @@ extern int yylex();
 %token <val> NUM        
 %token <val> STR        
 %token <tptr> VAR
+%token <val> LIST
 %token ASSERT        
 %token ERROR        
 %token AS        
 %token <type> TYPE        
+%token CLEAR        
+%token QUIT        
 
 %type <val> expr
+%type <val> list
+%type <val> nzlist
 
 %right ASSERT
 %right '='
@@ -43,31 +48,36 @@ program:
 
 line: 
     expr '\n' { 
-                printf("=");
-                lit_print($1); 
-                printf("\n"); 
-              }
+        printf("=");
+        lit_print($1); 
+        printf("\n"); 
+    }
     | expr ';' '\n' { }
     | error { }
     | ';' '\n'
     | '\n'
+    | CLEAR '\n' {
+        printf("\033[H\033[2J");
+        fflush(stdout);
+    }
+    | QUIT '\n' {
+        fflush(stdout);
+        printf("See you soon!\n");
+        YYABORT;
+    }
     ;
 
 expr: 
     NUM { $$ = $1; }
     | STR { $$ = $1; }
-
+ 
     | VAR { 
         if (!$1->assigned) { yyerror("Can not read value from non-initialized var"); YYERROR; }
         $$ = $1->value; 
     }
 
     | expr ASSERT expr { 
-        if (lit_neq($1, $3)) { 
-            // YYERROR;
-            yyerror("Values doesn't match\n"); 
-            exit(1); 
-        } 
+        if (lit_neq($1, $3)) { yyerror("Values doesn't match\n"); exit(1); } 
         $$ = $1; 
     }
 
@@ -76,10 +86,23 @@ expr:
     }
 
     | VAR '=' expr { 
-        if ($1->constant) { yyerror("Can not assign to constant var"); YYERROR; }
+        if ($1->constant) { yyerror("Assigning to a constant var"); YYERROR; }
         if (!$1->assigned) { $1->assigned = true; }
         $$ = $1->value = $3;
           
+    }
+
+    | VAR '(' list ')' { 
+        if (!$1->callable && !$1->assigned){
+            $$ = lit_call($1->value, $3); 
+        }
+        else if (!$1->callable && $1->assigned) { 
+            yyerror("Calling a non-callable var"); 
+            YYERROR; 
+        } 
+        else {
+            $$ = lit_call($1->value, $3); 
+        }
     }
 
     | expr '+' expr { $$ = lit_add($1, $3); }
@@ -90,6 +113,13 @@ expr:
     | expr '^' expr { $$ = lit_pow($1, $3); }
     | '(' expr ')' { $$ = $2; }
     ;
+
+list: { $$ = lit_list(); }
+    | nzlist { $$ = $1; }
+
+nzlist:
+    expr { $$ = lit_list_add(lit_list(), $1); }
+    | nzlist ',' expr { lit_list_add($1, $3); }
 
 %%
 

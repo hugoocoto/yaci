@@ -9,6 +9,7 @@ typedef struct TS_Entry {
         Lit value;
         bool assigned; // false by default
         bool constant; // false by default
+        bool callable; // false by default
         int type;
 } TS_Entry;
 

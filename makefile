@@ -2,7 +2,7 @@ OUT = yaci
 CC = cc
 OBJ_DIR = obj
 FLAGS = -Wall -Wextra -g -Werror 
-LIBS = -lm
+LIBS = -lm -lffi
 INCLUDES = -Isrc
 
 SRC = $(wildcard src/*.c) src/lex.c src/parser.tab.c

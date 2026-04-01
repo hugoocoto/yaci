@@ -1,13 +1,25 @@
 #ifndef LIT_H_
 #define LIT_H_
 
-typedef struct Lit {
+#include "da.h"
+
+typedef struct Lit Lit;
+typedef struct Lit_List Lit_List;
+
+struct Lit_List {
+        int capacity;
+        int count;
+        Lit *data;
+};
+
+struct Lit {
         int type;
         union {
                 char *str;
                 double num;
+                Lit_List list;
         } as;
-} Lit;
+};
 
 #endif
 
@@ -26,3 +38,8 @@ Lit str_to_lit(char *s);
 
 Lit lit_cast(Lit a, int type);
 int lit_print(Lit a);
+
+Lit lit_call(Lit func, Lit args);
+
+Lit lit_list();
+Lit lit_list_add(Lit list, Lit value);
