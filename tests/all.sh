@@ -19,6 +19,6 @@ done
 echo
 echo "TEST SUMMARY"
 echo "[failed]: $FAILED" 
-echo "[passed]: $TOTAL" 
+echo "[passed]: $(($TOTAL - $FAILED))" 
 
 exit $FAILED

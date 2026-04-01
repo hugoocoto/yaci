@@ -2,7 +2,7 @@ OUT = yaci
 CC = cc
 OBJ_DIR = obj
 FLAGS = -Wall -Wextra -g -Werror 
-LIBS = -lm -lffi
+LIBS = -lm -lffi -lreadline
 INCLUDES = -Isrc
 
 SRC = $(wildcard src/*.c) src/lex.c src/parser.tab.c
@@ -15,7 +15,7 @@ all: compile
 
 compile: $(OUT)
 
-$(OUT): $(OBJ) 
+$(OUT): $(OBJ)
 	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
 $(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS) src/parser.tab.h

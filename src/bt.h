@@ -1,7 +1,4 @@
-/* unBalanced Tree -- uncolored red-Black Tree
- *
- * The idea was to have a balanced RB tree. But at the end it's not.
- * */
+/* unBalanced Tree -- uncolored red-Black Tree */
 
 /* To initialize a BTree, you have to zero initialize a BT
  *
@@ -37,6 +34,10 @@
  * Value_Delete_Callback signature
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct BT BT;
 
 typedef void (*Value_Delete_Callback)(void *);
@@ -51,18 +52,31 @@ extern char *bt_get_key_addr(BT *tree, const char *key); /* Get the address of t
 #ifndef BT_H_
 #define BT_H_
 
+typedef enum BT_Dir {
+        BT_LEFT,
+        BT_RIGHT,
+} BT_Dir;
+
+typedef enum BT_Color {
+        BT_C_NONE,
+        BT_C_RED,
+        BT_C_BLACK,
+} BT_Color;
+
 struct BT {
         char *key;
         void *value;
-        BT *right;
-        BT *left;
 
-        /* This is going to be a red-black tree in the future */
-        enum BT_Color {
-                BT_C_NONE,
-                BT_C_RED,
-                BT_C_BLACK,
-        } color;
+        struct BT *parent;
+        union {
+                struct {
+                        BT *right;
+                        BT *left;
+                };
+                struct BT *child[2];
+        };
+
+        BT_Color color;
 };
 
 #endif // !BT_H_
@@ -85,41 +99,74 @@ struct BT {
 #define BT_FPRINTF fprintf
 #endif
 
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+// static BT_Dir
+// direction(BT *node)
+// {
+//         assert(node && node->parent);
+//         return node == node->parent->right ? BT_RIGHT : BT_LEFT;
+// }
+//
+// static BT *
+// rotate_subtree(BT **tree, BT *sub, BT_Dir dir)
+// {
+//         BT *new_root = sub->child[1 - dir];
+//         BT *new_child = new_root->child[dir];
+//
+//         sub->child[1 - dir] = new_child;
+//
+//         if (new_child) new_child->parent = sub;
+//         new_child->child[dir] = sub;
+//
+//         new_root->parent = sub->parent;
+//         sub->parent = new_root;
+//         if (sub->parent) {
+//                 sub->parent->child[sub == sub->parent->right] = new_root;
+//         } else {
+//                 *tree = new_root;
+//         }
+//
+//         return new_root;
+// }
+
 static void
-node_set(BT *node, const char *key, void *value)
+node_set(BT *node, const char *key, void *value, BT *parent)
 {
+        node->parent = parent;
         node->key = BT_STRDUP(key);
         node->value = value;
         node->color = BT_C_BLACK;
+        node->left = node->right = 0;
 }
 
 int
 bt_add(BT *tree, const char *key, void *value)
 {
         if (!tree->key) {
-                node_set(tree, key, value);
+                node_set(tree, key, value, NULL);
                 return 0;
         }
 
         BT *node = tree;
         for (;;) {
                 if (node->key == 0) {
-                        node_set(node, key, value);
+                        node_set(node, key, value, node->parent);
                         return 0;
                 }
 
                 int cmp = BT_COMPARE(node->key, key);
 
                 if (cmp > 0) {
-                        if (!node->left) node->left = BT_CALLOC(1, sizeof(BT));
+                        if (!node->left) node->left = (BT *) BT_CALLOC(1, sizeof(BT));
                         node = node->left;
                 }
 
                 if (cmp < 0) {
-                        if (!node->right) node->right = BT_CALLOC(1, sizeof(BT));
+                        if (!node->right) node->right = (BT *) BT_CALLOC(1, sizeof(BT));
                         node = node->right;
                 }
 
@@ -133,7 +180,7 @@ bt_add(BT *tree, const char *key, void *value)
         }
 }
 
-static void *
+static BT *
 bt_node_get(BT *tree, const char *key)
 {
         BT *node = tree;
@@ -221,3 +268,7 @@ bt_write(void *f, BT *tree)
 }
 
 #endif // !BT_IMPLEMENTATION
+
+#ifdef __cplusplus
+}
+#endif

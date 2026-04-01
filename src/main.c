@@ -1,28 +1,39 @@
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
+
+int should_quit = 0;
 
 #ifndef TEST
 
 #include "flag.h"
+#include <readline/readline.h>
 
 extern int yyparse();
 extern int yylex_destroy();
+extern int open_file(char *);
+extern void close_file();
+extern char **input_stream;
+
+#define PROMPT ">> "
 
 void
 repl()
 {
-        printf("REPL:\n");
-        yyparse();
+        open_file(NULL);
+        while (!should_quit) {
+                // char *this = strdup(readline(PROMPT));
+                // input_stream = &this;
+                yyparse();
+        }
+        close_file();
         yylex_destroy();
 }
 
 int
 parse(char *filename)
 {
-        extern int open_file(char *);
-        extern void close_file();
-
         if (open_file(filename)) {
                 perror(filename);
                 return 1;
@@ -40,8 +51,6 @@ void
 exit_handler(int sig)
 {
         (void) sig;
-        extern const char *quit_seq;
-        printf("\nMaybe you want to type one of:\n%s\n", quit_seq);
 }
 
 int
@@ -84,6 +93,3 @@ main()
 }
 
 #endif
-
-
-const char *quit_seq = "quit, quiT, quIt, quIT, qUit, qUiT, qUIt, qUIT, Quit, QuiT, QuIt, QuIT, QUit, QUiT, QUIt, QUIT, exit, exiT, exIt, exIT, eXit, eXiT, eXIt, eXIT, Exit, ExiT, ExIt, ExIT, EXit, EXiT, EXIt, EXIT, q, Q, q!, Q!, wq, wQ, Wq, WQ, wq!, wQ!, Wq!, WQ!, :q, :Q, :q!, :Q!, :wq, :wQ, :Wq, :WQ, :wq!, :wQ!, :Wq!, :WQ!, quit(), quiT(), quIt(), quIT(), qUit(), qUiT(), qUIt(), qUIT(), Quit(), QuiT(), QuIt(), QuIT(), QUit(), QUiT(), QUIt(), QUIT(), exit(), exiT(), exIt(), exIT(), eXit(), eXiT(), eXIt(), eXIT(), Exit(), ExiT(), ExIt(), ExIT(), EXit(), EXiT(), EXIt(), EXIT(), q(), Q(), q!(), Q!(), wq(), wQ(), Wq(), WQ(), wq!(), wQ!(), Wq!(), WQ!(), :q(), :Q(), :q!(), :Q!(), :wq(), :wQ(), :Wq(), :WQ(), :wq!(), :wQ!(), :Wq!(), :WQ!(), quit( ), quiT( ), quIt( ), quIT( ), qUit( ), qUiT( ), qUIt( ), qUIT( ), Quit( ), QuiT( ), QuIt( ), QuIT( ), QUit( ), QUiT( ), QUIt( ), QUIT( ), exit( ), exiT( ), exIt( ), exIT( ), eXit( ), eXiT( ), eXIt( ), eXIT( ), Exit( ), ExiT( ), ExIt( ), ExIT( ), EXit( ), EXiT( ), EXIt( ), EXIT( ), q( ), Q( ), q!( ), Q!( ), wq( ), wQ( ), Wq( ), WQ( ), wq!( ), wQ!( ), Wq!( ), WQ!( ), :q( ), :Q( ), :q!( ), :Q!( ), :wq( ), :wQ( ), :Wq( ), :WQ( ), :wq!( ), :wQ!( ), :Wq!( ), :WQ!( ), quit(  ), quiT(  ), quIt(  ), quIT(  ), qUit(  ), qUiT(  ), qUIt(  ), qUIT(  ), Quit(  ), QuiT(  ), QuIt(  ), QuIT(  ), QUit(  ), QUiT(  ), QUIt(  ), QUIT(  ), exit(  ), exiT(  ), exIt(  ), exIT(  ), eXit(  ), eXiT(  ), eXIt(  ), eXIT(  ), Exit(  ), ExiT(  ), ExIt(  ), ExIT(  ), EXit(  ), EXiT(  ), EXIt(  ), EXIT(  ), q(  ), Q(  ), q!(  ), Q!(  ), wq(  ), wQ(  ), Wq(  ), WQ(  ), wq!(  ), wQ!(  ), Wq!(  ), WQ!(  ), :q(  ), :Q(  ), :q!(  ), :Q!(  ), :wq(  ), :wQ(  ), :Wq(  ), :WQ(  ), :wq!(  ), :wQ!(  ), :Wq!(  ), :WQ!(  ), quit(   ), quiT(   ), quIt(   ), quIT(   ), qUit(   ), qUiT(   ), qUIt(   ), qUIT(   ), Quit(   ), QuiT(   ), QuIt(   ), QuIT(   ), QUit(   ), QUiT(   ), QUIt(   ), QUIT(   ), exit(   ), exiT(   ), exIt(   ), exIT(   ), eXit(   ), eXiT(   ), eXIt(   ), eXIT(   ), Exit(   ), ExiT(   ), ExIt(   ), ExIT(   ), EXit(   ), EXiT(   ), EXIt(   ), EXIT(   ), q(   ), Q(   ), q!(   ), Q!(   ), wq(   ), wQ(   ), Wq(   ), WQ(   ), wq!(   ), wQ!(   ), Wq!(   ), WQ!(   ), :q(   ), :Q(   ), :q!(   ), :Q!(   ), :wq(   ), :wQ(   ), :Wq(   ), :WQ(   ), :wq!(   ), :wQ!(   ), :Wq!(   ), :WQ!(   )";

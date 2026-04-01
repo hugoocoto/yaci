@@ -7,6 +7,7 @@
 
 extern void yyerror (char *);
 extern int yylex();
+extern int should_quit;
 %}
 
 %union {
@@ -22,6 +23,8 @@ extern int yylex();
 %token ASSERT        
 %token ERROR        
 %token AS        
+%token CONST        
+%token WORKSPACE        
 %token <type> TYPE        
 %token CLEAR        
 %token QUIT        
@@ -63,7 +66,12 @@ line:
     | QUIT '\n' {
         fflush(stdout);
         printf("See you soon!\n");
+        should_quit = 1;
         YYABORT;
+    }
+    | WORKSPACE '\n' {
+        ts_print();
+        fflush(stdout);
     }
     ;
 
@@ -89,6 +97,15 @@ expr:
         if ($1->constant) { yyerror("Assigning to a constant var"); YYERROR; }
         if (!$1->assigned) { $1->assigned = true; }
         $$ = $1->value = $3;
+          
+    }
+
+    | CONST VAR '=' expr { 
+        if ($2->constant) { yyerror("Assigning to a constant var"); YYERROR; }
+        if ($2->assigned) { yyerror("Changing var signature"); YYERROR; }
+        $2->assigned = true;
+        $2->constant = true;
+        $$ = $2->value = $4;
           
     }
 

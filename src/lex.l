@@ -1,6 +1,4 @@
-%option noyywrap
-%option noinput
-%option nounput
+%option noinput nounput noyywrap
 
 %{
 #include "lit.h"
@@ -8,6 +6,28 @@
 #include "parser.tab.h"
 
 extern TS_Entry* register_id();
+extern char **input_stream;
+char** input_stream;
+
+/* 
+#define YY_INPUT(buf, result, max_size)\
+{\
+        char *segment = *input_stream;\
+        if(segment == NULL) result = 0; \
+        else if (*segment == 0) { \
+            buf[0] = '\n';\
+            result = 1;\
+            *input_stream = NULL; \
+        }\
+        else {\
+            size_t avail = strnlen(segment, max_size);\
+            memcpy(buf, segment, avail);\
+            *input_stream += avail;\
+            result = avail;\
+        }\
+}
+*/
+
 %}
 
 /* numbers */
@@ -38,6 +58,7 @@ SCT [+/*^(){}\[\];.,=-]
 /* alpha operators */
 ASSERT "eq!"
 AS "as"
+CONST "const"
 
 /* types */
 TYPE_STR "str"
@@ -45,7 +66,8 @@ TYPE_NUM "num"
 
 /* commands */
 CLEAR [Cc][Ll][Ee][Aa][Rr]{PAR_OR_NOT}
-QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])|(":"?[Ww]?[Qq]"!"?)){PAR_OR_NOT}
+QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
+WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
 
 PAR_OR_NOT ("("[:space:]*")")?
 
@@ -56,6 +78,8 @@ PAR_OR_NOT ("("[:space:]*")")?
 {AS}        { return AS; }
 {CLEAR}     { return CLEAR; }
 {QUIT}      { return QUIT; }
+{CONST}     { return CONST; }
+{WORKSPACE} { return WORKSPACE; }
 {NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
 {CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
 {STR}       { yylval.val = str_to_lit(strdup(yytext)); return NUM; }
@@ -72,6 +96,10 @@ PAR_OR_NOT ("("[:space:]*")")?
 
 int open_file(char *filename) 
 {
+    if (filename == NULL) {
+        yyin = NULL;
+        return 0;
+    }
     FILE* f = fopen(filename, "r");
     if (f == NULL) return 1;
     yyin = f;
@@ -82,8 +110,9 @@ void close_file()
 {
     if (yyin && fileno(yyin) != fileno(stdin)) {
         fclose(yyin);
-        yyin = stdin;
+        yyin = NULL;
     }
+    if (yyin == NULL) yyin = stdin;
 }
 
 TS_Entry *register_id()
