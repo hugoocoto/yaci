@@ -169,7 +169,9 @@ lit_div(Lit a, Lit b)
 {
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
-        case NUM: return double_to_lit(a.as.num / b.as.num);
+        case NUM: 
+                if (b.as.num == 0) return LIT_ERROR;
+                return double_to_lit(a.as.num / b.as.num);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",

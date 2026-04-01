@@ -1,0 +1,3 @@
+log(e) eq! 1;
+log(e^2) eq! 2;
+log(e^(1/2)) eq! 0.5;
