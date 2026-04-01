@@ -2,6 +2,7 @@
 #define LIT_H_
 
 #include "da.h"
+#include <stdbool.h>
 
 typedef struct Lit Lit;
 typedef struct Lit_List Lit_List;
