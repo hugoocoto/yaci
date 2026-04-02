@@ -21,18 +21,61 @@ const char *pretty = (const char *) 1;
 
 #define PROMPT ">> "
 
+/* ------ readline custom completion functions ------ */
+
+const char *compl_dict[] = {
+        "exit", "quit", NULL
+};
+
+char *
+compl_gen(const char *text, int state)
+{
+        static int i, l;
+        const char *n;
+
+        if (state == 0) {
+                i = 0;
+                l = strlen(text);
+        }
+
+        while ((n = compl_dict[i++])) {
+                if (strncmp(n, text, l) == 0) return strdup(n);
+        }
+        return NULL;
+}
+
+char **
+compl_custom(const char *text, int start, int end)
+{
+        (void) end; // suppress unused warning
+
+        if (strncmp(text, "./", 2) == 0 ||
+            strncmp(text, "../", 3) == 0) {
+                rl_attempted_completion_over = 0;
+                return NULL;
+        }
+
+        rl_attempted_completion_over = 1;
+        if (start != 0) return NULL;
+        return rl_completion_matches(text, compl_gen);
+}
+
+/* ----- help functions ----- */
+
 void
 repl()
 {
         using_history();
         rl_variable_bind("editing-mode", "vi");
         rl_bind_key('\t', rl_complete);
+        rl_attempted_completion_function = compl_custom;
+
         open_file(NULL);
         char *input;
         while (!should_quit) {
                 input = readline(PROMPT);
                 if (!input) break;
-                add_history(input);
+                if (*input) add_history(input);
                 input_stream = &input;
                 yyparse();
                 free(input);
@@ -65,6 +108,8 @@ exit_handler(int sig)
         rl_redisplay();
 }
 
+/* ----- flags and execution loop ----- */
+
 int
 main(int argc, char **argv)
 {
@@ -79,7 +124,6 @@ main(int argc, char **argv)
                 flag_show_help(STDOUT_FILENO);
                 exit(1);
         }
-        flag_free();
 
         for (int i = 1; i < argc; i++) {
                 parse(argv[i]);
@@ -87,6 +131,7 @@ main(int argc, char **argv)
 
         if (!norepl) repl();
 
+        flag_free();
         return has_error;
 }
 

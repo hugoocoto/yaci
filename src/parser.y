@@ -6,6 +6,7 @@
 #include "lit.h"
 
 extern void yyerror (char *);
+extern int has_error;
 extern int yylex();
 extern int should_quit;
 %}
@@ -145,6 +146,7 @@ nzlist:
 void
 yyerror (char *s)
 {
+    has_error = 1;
     fprintf (stderr, "ERROR: %s\n", s);
 }
 
