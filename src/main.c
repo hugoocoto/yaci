@@ -21,11 +21,13 @@ extern char **input_stream;
 void
 repl()
 {
+        rl_variable_bind("editing-mode", "vi");
         open_file(NULL);
         while (!should_quit) {
-                // char *this = strdup(readline(PROMPT));
-                // input_stream = &this;
+                char *this = readline(PROMPT);
+                input_stream = &this;
                 yyparse();
+                free(this);
         }
         close_file();
         yylex_destroy();
@@ -45,27 +47,27 @@ parse(char *filename)
         return 0;
 }
 
-const char *pretty;
+const char *pretty = (const char *) 1;
 
 void
 exit_handler(int sig)
 {
         (void) sig;
+        putchar('\n'); /* Insecure but it works */
+        rl_on_new_line();
+        rl_replace_line("", 0);
+        rl_redisplay();
 }
 
 int
 main(int argc, char **argv)
 {
         const char *norepl;
-        const char *nopretty;
 
         signal(SIGINT, exit_handler);
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
-        flag_add(&nopretty, "--plain", .help = "Do not use pretty mode");
-
-        pretty = (const char *) (nopretty ? 0L : 1L);
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);

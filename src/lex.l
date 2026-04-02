@@ -6,27 +6,29 @@
 #include "parser.tab.h"
 
 extern TS_Entry* register_id();
-extern char **input_stream;
 char** input_stream;
 
-/* 
 #define YY_INPUT(buf, result, max_size)\
 {\
-        char *segment = *input_stream;\
-        if(segment == NULL) result = 0; \
-        else if (*segment == 0) { \
-            buf[0] = '\n';\
-            result = 1;\
-            *input_stream = NULL; \
-        }\
-        else {\
-            size_t avail = strnlen(segment, max_size);\
-            memcpy(buf, segment, avail);\
-            *input_stream += avail;\
-            result = avail;\
+        if (fileno(stdin) != fileno(yyin)) {\
+            buf[0] = getc(yyin); /* Todo: improve this */ \
+            result = buf[0] == EOF? YY_NULL : 1;\
+        } else {\
+            char *segment = *input_stream;\
+            if(segment == NULL) result = 0; \
+            else if (*segment == 0) { \
+                buf[0] = '\n';\
+                result = 1;\
+                *input_stream = NULL; \
+            }\
+            else {\
+                size_t avail = strnlen(segment, max_size);\
+                memcpy(buf, segment, avail);\
+                *input_stream += avail;\
+                result = avail;\
+            }\
         }\
 }
-*/
 
 %}
 
@@ -97,7 +99,7 @@ PAR_OR_NOT ("("[:space:]*")")?
 int open_file(char *filename) 
 {
     if (filename == NULL) {
-        yyin = NULL;
+        yyin = stdin;
         return 0;
     }
     FILE* f = fopen(filename, "r");
@@ -108,17 +110,15 @@ int open_file(char *filename)
 
 void close_file() 
 {
-    if (yyin && fileno(yyin) != fileno(stdin)) {
+    if (fileno(yyin) != fileno(stdin)) {
         fclose(yyin);
-        yyin = NULL;
     }
-    if (yyin == NULL) yyin = stdin;
+    yyin = stdin;
 }
 
 TS_Entry *register_id()
 {
         TS_Entry *entry = ts_get(yytext);
-
         if (!entry) {
                 ts_add(yytext, (TS_Entry) { 
                     .type = VAR, 
@@ -126,7 +126,5 @@ TS_Entry *register_id()
                 });
                 entry = ts_get(yytext);
         }
-
         return entry;
-
 }
