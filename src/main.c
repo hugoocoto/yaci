@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int should_quit = 0;
-int has_error = 0;
-
-#ifndef TEST
-
 #include "flag.h"
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -17,7 +12,8 @@ extern int open_file(char *);
 extern void close_file();
 extern char **input_stream;
 const char *pretty = (const char *) 1;
-
+int should_quit = 0;
+int has_error = 0;
 
 #define PROMPT ">> "
 
@@ -56,7 +52,7 @@ compl_custom(const char *text, int start, int end)
         }
 
         rl_attempted_completion_over = 1;
-        if (start != 0) return NULL;
+        if (start != 0) return NULL; // start is the cursor position i guess
         return rl_completion_matches(text, compl_gen);
 }
 
@@ -134,15 +130,3 @@ main(int argc, char **argv)
         flag_free();
         return has_error;
 }
-
-#else // TEST
-
-const char *pretty = 0;
-
-int
-main()
-{
-        return 0;
-}
-
-#endif

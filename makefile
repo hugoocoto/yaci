@@ -16,7 +16,6 @@ all: compile
 compile: $(OUT)
 
 $(OUT): $(OBJ) 
-	@if ! pkg-config --exists readline; then echo "readline not found!"; exit 1; fi
 	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
 $(OBJ_DIR)/%.o: src/%.c makefile $(HEADERS) src/parser.tab.h
@@ -36,7 +35,7 @@ clean:
 	rm -rf $(OBJ_DIR) test ./src/parser.tab.* ./src/lex.c
 
 cleanall: clean
-	rm -rf $(OUT) $(OUT).zip readline
+	rm -rf $(OUT) $(OUT).zip 
 
 test: 
 	./tests/all.sh
@@ -45,13 +44,3 @@ package: $(OUT).zip
 
 $(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* 
 	zip $(OUT).zip $^ --update
-
-# -------- Build readline --------
-
-install-readline: readline/Makefile
-	cd readline && make 
-	cd readline && sudo make install 1>/dev/null
-
-readline/Makefile: 
-	[[ -d "readline" ]] || git clone --depth 1 https://git.savannah.gnu.org/git/readline.git
-	cd readline && ./configure

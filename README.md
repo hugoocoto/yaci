@@ -18,5 +18,5 @@ make test
 
 ## Dependencies
 
-- readline: you can install it using `make install-readline` or the system
-  package manager.
+- readline: you can install it using the system package manager.
+  - ubuntu: `apt install libreadline-dev`

@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Build tests
         run: |
-          if ! pkg-config --exist readline; then make install-readline; fi
+          apt install libreadline-dev
           make CC=${{ matrix.cc }}
           make test
