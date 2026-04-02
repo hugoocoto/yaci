@@ -12,5 +12,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Build tests
         run: |
+          if ! pkg-config --exist readline; then make install-readline; fi
           make CC=${{ matrix.cc }}
           make test
