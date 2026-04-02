@@ -12,6 +12,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Build tests
         run: |
-          apt install libreadline-dev
+          sudo apt install libreadline-dev
           make CC=${{ matrix.cc }}
           make test
