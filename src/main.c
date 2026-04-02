@@ -1,13 +1,14 @@
 #include <signal.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 int should_quit = 0;
+int has_error = 0;
 
 #ifndef TEST
 
 #include "flag.h"
+#include <readline/history.h>
 #include <readline/readline.h>
 
 extern int yyparse();
@@ -15,19 +16,26 @@ extern int yylex_destroy();
 extern int open_file(char *);
 extern void close_file();
 extern char **input_stream;
+const char *pretty = (const char *) 1;
+
 
 #define PROMPT ">> "
 
 void
 repl()
 {
+        using_history();
         rl_variable_bind("editing-mode", "vi");
+        rl_bind_key('\t', rl_complete);
         open_file(NULL);
+        char *input;
         while (!should_quit) {
-                char *this = readline(PROMPT);
-                input_stream = &this;
+                input = readline(PROMPT);
+                if (!input) break;
+                add_history(input);
+                input_stream = &input;
                 yyparse();
-                free(this);
+                free(input);
         }
         close_file();
         yylex_destroy();
@@ -46,8 +54,6 @@ parse(char *filename)
         yylex_destroy();
         return 0;
 }
-
-const char *pretty = (const char *) 1;
 
 void
 exit_handler(int sig)
@@ -81,7 +87,7 @@ main(int argc, char **argv)
 
         if (!norepl) repl();
 
-        return 0;
+        return has_error;
 }
 
 #else // TEST

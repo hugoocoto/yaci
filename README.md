@@ -15,3 +15,8 @@ make
 ```sh
 make test
 ```
+
+## Dependencies
+
+- readline: you can install it using `make install-readline` or the system
+  package manager.
