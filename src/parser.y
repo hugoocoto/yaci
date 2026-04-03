@@ -105,7 +105,6 @@ expr:
         if ($1->constant) { yyerror("Assigning to a constant var"); YYERROR; }
         if (!$1->assigned) { $1->assigned = true; }
         $$ = $1->value = $3;
-          
     }
 
     | CONST VAR '=' expr { 

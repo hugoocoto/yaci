@@ -3,6 +3,7 @@
 Yet Another Calculator Interpreter
 
 ## Features
+
 - Supports numbers and strings
 - Numbers (floating point): `2.9e-1`
 - Strings: `"hello"`
@@ -21,10 +22,17 @@ Yet Another Calculator Interpreter
 - Suggest commands
 - Automate Test Workflow. Only gnu/linux is supported
 - Rich flag support: `./yaci --help`
-- Repl by default, with `--norepl` option
+- Repl by default, supports `--norepl` option
 - Interprete commands from file passing them as arguments
 - Load files on runtime
+
+### Tech
+
 - flex + bison
+- gnu readline
+- Hugo's flag.h
+- libffi
+
 
 ## Build
 
@@ -32,6 +40,7 @@ Yet Another Calculator Interpreter
 
 - readline: you can install it using the system package manager.
   - ubuntu: `apt install libreadline-dev`
+
 You can compile it from source 
 
 ```sh

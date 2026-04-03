@@ -82,6 +82,8 @@ CONST "const"
 SILENT "shh!"
 MINUS "minus"
 PLUS "plus"
+LET "let"
+BE "be"
 
 /* types */
 TYPE_STR "str"
@@ -107,6 +109,8 @@ PAR_OR_NOT ("("{WS}?")")?
 {WORKSPACE} { return WORKSPACE; }
 {LOAD}      { return LOAD; }
 {ASSERT}    { return ASSERT; }
+{LET}       { }
+{BE}        { return '='; }
 {SILENT}    { return ';'; }
 {MINUS}     { return '-'; }
 {PLUS}      { return '+'; }
