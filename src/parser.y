@@ -5,10 +5,13 @@
 #include "ts.h"
 #include "lit.h"
 
-extern void yyerror (char *);
 extern int has_error;
 extern int yylex();
 extern int should_quit;
+extern int load(char *);
+extern int open_file(char*);
+extern void close_file();
+extern void yyerror(char *);
 %}
 
 %union {
@@ -19,16 +22,21 @@ extern int should_quit;
 
 %token <val> NUM        
 %token <val> STR        
+%token <val> PATH        
 %token <tptr> VAR
 %token <val> LIST
-%token ASSERT        
+
 %token ERROR        
+
+%token ASSERT        
 %token AS        
+%token <type> TYPE        
+
 %token CONST        
 %token WORKSPACE        
-%token <type> TYPE        
 %token CLEAR        
 %token QUIT        
+%token LOAD        
 
 %type <val> expr
 %type <val> list
@@ -60,26 +68,25 @@ line:
     | error { }
     | ';' '\n'
     | '\n'
-    | CLEAR '\n' {
-        printf("\033[H\033[2J");
-        fflush(stdout);
-    }
+
+    | CLEAR '\n' { printf("\033[H\033[2J"); }
+    | WORKSPACE '\n' { ts_print(); }
+
     | QUIT '\n' {
         fflush(stdout);
         printf("See you soon!\n");
         should_quit = 1;
         YYABORT;
     }
-    | WORKSPACE '\n' {
-        ts_print();
-        fflush(stdout);
-    }
+
+    | LOAD VAR '\n' { if (load($2->value.as.str)) YYERROR; }
+    | LOAD PATH '\n' { if (load($2.as.str)) YYERROR; }
     ;
 
 expr: 
     NUM { $$ = $1; }
     | STR { $$ = $1; }
- 
+    | PATH { $$ = $1; }
     | VAR { 
         if (!$1->assigned) { yyerror("Can not read value from non-initialized var"); YYERROR; }
         $$ = $1->value; 
@@ -150,3 +157,10 @@ yyerror (char *s)
     fprintf (stderr, "ERROR: %s\n", s);
 }
 
+int load(char* s){
+    if(open_file(s)){
+        yyerror("file not found");
+        return 1;
+    }
+    return 0;
+}

@@ -11,16 +11,17 @@ extern int yylex_destroy();
 extern int open_file(char *);
 extern void close_file();
 extern char **input_stream;
-const char *pretty = (const char *) 1;
+char *pretty = (char *) 1;
 int should_quit = 0;
 int has_error = 0;
+int verbose;
 
 #define PROMPT ">> "
 
 /* ------ readline custom completion functions ------ */
 
 const char *compl_dict[] = {
-        "exit", "quit", NULL
+        "exit", "quit", "load", NULL
 };
 
 char *
@@ -75,6 +76,7 @@ repl()
                 input_stream = &input;
                 yyparse();
                 free(input);
+                fflush(stdout);
         }
         close_file();
         yylex_destroy();
@@ -115,6 +117,7 @@ main(int argc, char **argv)
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
+        flag_add((const char **) &verbose, "--verbose", "-v", .help = "Write more text than usual");
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);

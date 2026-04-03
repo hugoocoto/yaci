@@ -2,32 +2,38 @@
 
 %{
 #include "lit.h"
-#include "ts.h"
 #include "parser.tab.h"
+#include "ts.h"
 
-extern TS_Entry* register_id();
-char** input_stream;
+extern TS_Entry *register_id();
+extern int verbose;
+char **input_stream = NULL;
 
-#define YY_INPUT(buf, result, max_size)\
-{\
-        if (fileno(stdin) != fileno(yyin)) {\
-            buf[0] = getc(yyin); /* Todo: improve this */ \
-            result = buf[0] == EOF? YY_NULL : 1;\
-        } else {\
-            char *segment = *input_stream;\
-            if(segment == NULL) result = 0; \
-            else if (*segment == 0) { \
-                buf[0] = '\n';\
-                result = 1;\
-                *input_stream = NULL; \
-            }\
-            else {\
-                size_t avail = strnlen(segment, max_size);\
-                memcpy(buf, segment, avail);\
-                *input_stream += avail;\
-                result = avail;\
-            }\
-        }\
+#define YY_INPUT(buf, result, max_size)                              \
+{                                                                    \
+        if (fileno(stdin) != fileno(yyin)) {                         \
+                buf[0] = getc(yyin); /* Todo: improve this */        \
+                if (buf[0] == EOF) {                                 \
+                        goto stream_case;                            \
+                };                                                   \
+                if (verbose) putchar(buf[0]);                        \
+                result = 1;                                          \
+        } else {                                                     \
+        stream_case:                                                 \
+                char *segment = input_stream ? *input_stream : NULL; \
+                if (segment == NULL)                                 \
+                        result = 0;                                  \
+                else if (*segment == 0) {                            \
+                        buf[0] = '\n';                               \
+                        result = 1;                                  \
+                        *input_stream = NULL;                        \
+                } else {                                             \
+                        size_t avail = strnlen(segment, max_size);   \
+                        memcpy(buf, segment, avail);                 \
+                        *input_stream += avail;                      \
+                        result = avail;                              \
+                }                                                    \
+        }                                                            \
 }
 
 %}
@@ -48,11 +54,17 @@ DQSTR "\""{STRCHR}*"\""
 STRCHR {ESCSEQ}|[^\\"\n]
 ESCSEQ "\\"['"?\\0abfnrtv]
 
+/* path -> start with ./ or between <> */
+PATH ({PATH_START}{PATH_DIR}*{PATH_TEXT})|("<"{PATH_DIR}*{PATH_TEXT}">")
+PATH_START ("."|"..")"/"
+PATH_DIR ({PATH_TEXT}|"."|"..")"/"
+PATH_TEXT [^/[:space:]]+
+
 /* id */
 ID [[:alpha:]_][[:alnum:]_]* 
 
 /* whitespace */
-WS [ \t\f\r\v]+
+WS [ \f\r\t\v]+
 
 /* Single Char Token */
 SCT [+/*^(){}\[\];.,=-]
@@ -70,8 +82,9 @@ TYPE_NUM "num"
 CLEAR [Cc][Ll][Ee][Aa][Rr]{PAR_OR_NOT}
 QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
 WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
+LOAD [Ll][Oo][Aa][Dd]
 
-PAR_OR_NOT ("("[:space:]*")")?
+PAR_OR_NOT ("("[[:space:]]*")")?
 
 %%
 
@@ -82,15 +95,17 @@ PAR_OR_NOT ("("[:space:]*")")?
 {QUIT}      { return QUIT; }
 {CONST}     { return CONST; }
 {WORKSPACE} { return WORKSPACE; }
+{LOAD}      { return LOAD; }
+{ASSERT}    { return ASSERT; }
 {NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
 {CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
-{STR}       { yylval.val = str_to_lit(strdup(yytext)); return NUM; }
+{STR}       { yylval.val = str_to_lit(strdup(yytext)); return STR; }
+{PATH}      { printf("PATH=%s\n", yytext); yylval.val = str_to_lit(strdup(yytext)); return PATH; }
 {ID}        { yylval.tptr = register_id(); return VAR; }
 {SCT}       { return *yytext; }
-{ASSERT}    { return ASSERT; }
 "\n"        { return '\n'; }
 {WS}        { }
-.           { printf("! Error: unknown token: %s\n", yytext); }
+.           { printf("! Error: unknown token: `%s`\n", yytext); }
 
 %%
 

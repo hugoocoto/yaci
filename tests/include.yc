@@ -1,0 +1,8 @@
+load ./tests/one.yc
+load <tests/two.yc>
+a = <tests/../tests/three.yc>;
+load a
+
+_one eq! one;
+_two eq! two;
+_three eq! three;
