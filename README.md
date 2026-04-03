@@ -23,6 +23,7 @@ Yet Another Calculator Interpreter
 - Rich flag support: `./yaci --help`
 - Repl by default, with `--norepl` option
 - Interprete commands from file passing them as arguments
+- Load files on runtime
 - flex + bison
 
 ## Build

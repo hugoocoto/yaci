@@ -11,7 +11,7 @@ extern int should_quit;
 extern int load(char *);
 extern int open_file(char*);
 extern void close_file();
-extern void yyerror(char *);
+extern int yyerror(const char*, ...);
 %}
 
 %union {
@@ -148,18 +148,25 @@ nzlist:
 
 %%
 
+#include <stdarg.h>
 #include <stdio.h>
 
-void
-yyerror (char *s)
+int yyerror(const char*fmt, ...)
 {
+    va_list ap;
+    int n = 0;
+    va_start(ap, fmt);
+    n += fprintf(stderr, "ERROR: ");
+    n += vfprintf(stderr, fmt, ap);
+    if(fmt[strlen(fmt)-1] != '\n') n+=fprintf(stderr, "\n");
+    va_end(ap);
     has_error = 1;
-    fprintf (stderr, "ERROR: %s\n", s);
+    return n;
 }
 
 int load(char* s){
     if(open_file(s)){
-        yyerror("file not found");
+        yyerror("file `%s` not found", s);
         return 1;
     }
     return 0;

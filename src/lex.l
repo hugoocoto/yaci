@@ -7,7 +7,9 @@
 
 extern TS_Entry *register_id();
 extern int verbose;
+extern int yyerror(const char*, ...);
 char **input_stream = NULL;
+extern char *trim_right(char *c);
 
 #define YY_INPUT(buf, result, max_size)                              \
 {                                                                    \
@@ -46,6 +48,7 @@ EXP [eE][-+]?{DECIMAL}
 
 /* chars (numbers) */
 CHAR "'"[^']"'"
+/* if it's not closed it raises unclosed string error */
 
 /* strings */
 STR {DQSTR}|{SQSTR}
@@ -54,11 +57,14 @@ DQSTR "\""{STRCHR}*"\""
 STRCHR {ESCSEQ}|[^\\"\n]
 ESCSEQ "\\"['"?\\0abfnrtv]
 
+ERR_SQSTR "'"{STRCHR}*\n
+ERR_DQSTR "\""{STRCHR}*\n
+
 /* path -> start with ./ or between <> */
 PATH ({PATH_START}{PATH_DIR}*{PATH_TEXT})|("<"{PATH_DIR}*{PATH_TEXT}">")
 PATH_START ("."|"..")"/"
 PATH_DIR ({PATH_TEXT}|"."|"..")"/"
-PATH_TEXT [^/[:space:]]+
+PATH_TEXT [^/[:space:];]+
 
 /* id */
 ID [[:alpha:]_][[:alnum:]_]* 
@@ -73,6 +79,9 @@ SCT [+/*^(){}\[\];.,=-]
 ASSERT "eq!"
 AS "as"
 CONST "const"
+SILENT "shh!"
+MINUS "minus"
+PLUS "plus"
 
 /* types */
 TYPE_STR "str"
@@ -84,12 +93,13 @@ QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
 WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
 LOAD [Ll][Oo][Aa][Dd]
 
-PAR_OR_NOT ("("[[:space:]]*")")?
+PAR_OR_NOT ("("{WS}?")")?
 
 %%
 
 {TYPE_NUM}  { yylval.type = NUM; return TYPE; }
 {TYPE_STR}  { yylval.type = STR; return TYPE; }
+
 {AS}        { return AS; }
 {CLEAR}     { return CLEAR; }
 {QUIT}      { return QUIT; }
@@ -97,19 +107,28 @@ PAR_OR_NOT ("("[[:space:]]*")")?
 {WORKSPACE} { return WORKSPACE; }
 {LOAD}      { return LOAD; }
 {ASSERT}    { return ASSERT; }
+{SILENT}    { return ';'; }
+{MINUS}     { return '-'; }
+{PLUS}      { return '+'; }
+
 {NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
 {CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
 {STR}       { yylval.val = str_to_lit(strdup(yytext)); return STR; }
-{PATH}      { printf("PATH=%s\n", yytext); yylval.val = str_to_lit(strdup(yytext)); return PATH; }
+{PATH}      { yylval.val = str_to_lit(strdup(yytext)); return PATH; }
 {ID}        { yylval.tptr = register_id(); return VAR; }
 {SCT}       { return *yytext; }
+
 "\n"        { return '\n'; }
 {WS}        { }
-.           { printf("! Error: unknown token: `%s`\n", yytext); }
+
+.           { yyerror("Unknown token `%s`\n", yytext); }
+{ERR_SQSTR} { yyerror("Unclosed string `%s`\n", trim_right(yytext)); }
+{ERR_DQSTR} { yyerror("Unclosed string `%s`\n", trim_right(yytext)); }
 
 %%
 
 #include <string.h>
+#include <ctype.h>
 
 int open_file(char *filename) 
 {
@@ -131,6 +150,17 @@ void close_file()
     yyin = stdin;
 }
 
+char *trim_right(char *c){
+    char* r = c + strlen(c) - 1;
+    while(isspace(*r) && r >= c){
+        *r = 0;
+        --r;
+    }
+    return c;
+}
+
+/* get the entry in the symbol table. 
+ * Add it if it's not there (key = yytext) */
 TS_Entry *register_id()
 {
         TS_Entry *entry = ts_get(yytext);
