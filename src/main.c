@@ -137,6 +137,11 @@ main(int argc, char **argv)
 
         signal(SIGINT, exit_handler);
 
+        printf("argv (%p)\n", &argv);
+        for (int i = 0; i < argc; i++){
+                printf("Arg[%d] = %s (%p)\n", i, argv[i], &argv[i]);
+        }
+
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add((const char **) &norepl, "--norepl", .help = "Do not enter repl mode");
         flag_add((const char **) &verbose, "--verbose", "-v", .help = "Give hints and show a little more info");

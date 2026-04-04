@@ -2,6 +2,9 @@
 
 Yet Another Calculator Interpreter
 
+> [!NOTE]
+> WTF clang breaks flag.h. Now it's only compatible with gcc until I fix it.
+
 ## Features
 
 - Supports numbers and strings

@@ -122,7 +122,7 @@ extern "C" {
 
 #define flag_list(x, ...) (const char *[]){ x, ##__VA_ARGS__, 0 }
 
-#define MAX_FLAG_COUNT 6
+#define MAX_FLAG_COUNT 5
 
 struct flag_opts {
         const char *opt;      // Flag (--help)
@@ -224,7 +224,7 @@ __flag_program(struct program_opts opts)
 }
 
 static void
-__flag_pop_arg(int *argc, char ***argv, int *i)
+__flag_pop_arg(int *argc, char **argv[], int *i)
 {
         if (*i + 1 < *argc) {
                 memmove(&(*argv)[*i], &(*argv)[*i + 1], (*argc - *i - 1) * sizeof(char *));
@@ -234,15 +234,15 @@ __flag_pop_arg(int *argc, char ***argv, int *i)
 }
 
 static int
-flag_parse(int *argc, char ***argv)
+flag_parse(int *argc, char **argv[])
 {
         struct flag_opts *fopt;
         int i, j;
         int has_error = 0;
 
-        if (!flag_prog.name || !*flag_prog.name) flag_prog.name = **argv;
+        if (!flag_prog.name || !*flag_prog.name) flag_prog.name = (*argv)[0];
 
-        for (i = 0; i < *argc; i++) {
+        for (i = 1; i < *argc; i++) {
                 if (strcmp((*argv)[i], "-h") == 0 ||
                     strcmp((*argv)[i], "-help") == 0 ||
                     strcmp((*argv)[i], "--help") == 0) {
@@ -252,7 +252,7 @@ flag_parse(int *argc, char ***argv)
                 }
         }
 
-        for (i = 0; i < *argc; i++) {
+        for (i = 1; i < *argc; i++) {
                 for (j = 0; j < flag_flags.count; j++) {
                         fopt = flag_flags.flags + j;
                         if (!fopt->var) continue;

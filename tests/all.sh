@@ -4,7 +4,7 @@
 #
 # Run all the files in ./tests that are .yc files
 
-YACI_FLAGS="--norepl --verbose"
+YACI_FLAGS=--norepl --verbose
 
 SCRIPT_DIR="$( cd "$( dirname "$BASH_SOURCE[0]" )" && pwd )"
 cd "$SCRIPT_DIR/.."
