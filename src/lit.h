@@ -18,11 +18,13 @@ struct Lit {
         union {
                 char *str;
                 double num;
-                Lit_List list;
+                Lit_List *list;
         } as;
 };
 
 #endif
+
+void lit_free(Lit a);
 
 Lit lit_add(Lit a, Lit b); /* a + b */
 Lit lit_sub(Lit a, Lit b); /* a - b */
@@ -33,14 +35,11 @@ Lit lit_neg(Lit a);        /* -a    */
 
 bool lit_neq(Lit a, Lit b); /* a != b */
 
-
+Lit lit_cast(Lit a, int type); /* change type (type is bison token name) */
 Lit double_to_lit(double d);
 Lit str_to_lit(char *s);
+Lit lit_list();                        /* create empty list */
+Lit lit_list_add(Lit list, Lit value); /* add a value to the list */
 
-Lit lit_cast(Lit a, int type);
 int lit_print(Lit a);
-
 Lit lit_call(Lit func, Lit args);
-
-Lit lit_list();
-Lit lit_list_add(Lit list, Lit value);

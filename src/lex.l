@@ -14,10 +14,10 @@ extern char *trim_right(char *c);
 #define YY_INPUT(buf, result, max_size)                              \
 {                                                                    \
         if (fileno(stdin) != fileno(yyin)) {                         \
-                buf[0] = getc(yyin); /* Todo: improve this */        \
+                buf[0] = getc(yyin);                                 \
                 if (buf[0] == EOF) {                                 \
                         goto stream_case;                            \
-                };                                                   \
+                }                                                    \
                 if (verbose) putchar(buf[0]);                        \
                 result = 1;                                          \
         } else {                                                     \
@@ -56,19 +56,24 @@ CHAR "'"[^']"'"
 
 /* strings */
 STR {DQSTR}|{SQSTR}
-SQSTR "'"{STRCHR}*"'"
-DQSTR "\""{STRCHR}*"\""
-STRCHR {ESCSEQ}|[^\\"\n]
+SQSTR "'"{SQSTRCHR}*"'"
+DQSTR "\""{DQSTRCHR}*"\""
+SQSTRCHR {ESCSEQ}|[^\\'\n]
+DQSTRCHR {ESCSEQ}|[^\\"\n]
 ESCSEQ "\\"['"?\\0abfnrtv]
 
-ERR_SQSTR "'"{STRCHR}*\n
-ERR_DQSTR "\""{STRCHR}*\n
+ERR_DQSTR "\""{DQSTRCHR}*\n
+ERR_SQSTR "'"{SQSTRCHR}*\n
 
 /* path -> start with ./ or between <> */
 PATH ({PATH_START}{PATH_DIR}*{PATH_TEXT})|("<"{PATH_DIR}*{PATH_TEXT}">")
 PATH_START ("."|"..")"/"
 PATH_DIR ({PATH_TEXT}|"."|"..")"/"
 PATH_TEXT [^/[:space:];]+
+
+/* booleans for commands */
+TRUE ([Tt][Rr][Uu][Ee])|([Oo][Nn])|([Yy][Ee][Ss])
+FALSE ([Ff][Aa][Ll][Ss][Ee])|([Oo][Ff][Ff])|([Nn][Oo])
 
 /* id */
 ID [[:alpha:]_][[:alnum:]_]* 
@@ -83,7 +88,7 @@ SCT [+/*^(){}\[\];.,=-]
 ASSERT "eq!"
 AS "as"
 CONST "const"
-SILENT "shh!"
+SILENT ("shh!")|(", but don't show any output")|(", but be quiet")
 MINUS "minus"
 PLUS "plus"
 LET "let"
@@ -92,12 +97,15 @@ BE "be"
 /* types */
 TYPE_STR "str"
 TYPE_NUM "num"
+TYPE_LIST "list"
 
 /* commands */
 CLEAR [Cc][Ll][Ee][Aa][Rr]{PAR_OR_NOT}
 QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
 WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
 LOAD [Ll][Oo][Aa][Dd]
+VERBOSE [Vv][Ee][Rr][Bb][Oo][Ss][Ee]
+ECHO [Ee][Cc][Hh][Oo]
 
 PAR_OR_NOT ("("{WS}?")")?
 
@@ -105,6 +113,7 @@ PAR_OR_NOT ("("{WS}?")")?
 
 {TYPE_NUM}  { yylval.type = NUM; return TYPE; }
 {TYPE_STR}  { yylval.type = STR; return TYPE; }
+{TYPE_LIST}  { yylval.type = LIST; return TYPE; }
 
 {AS}        { return AS; }
 {CLEAR}     { return CLEAR; }
@@ -113,6 +122,12 @@ PAR_OR_NOT ("("{WS}?")")?
 {WORKSPACE} { return WORKSPACE; }
 {LOAD}      { return LOAD; }
 {ASSERT}    { return ASSERT; }
+{VERBOSE}   { return VERBOSE; }
+{ECHO}      { return T_ECHO; }
+
+{TRUE}      { return TRUE; }
+{FALSE}     { return FALSE; }
+
 {LET}       { }
 {BE}        { return '='; }
 {SILENT}    { return ';'; }

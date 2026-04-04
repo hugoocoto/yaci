@@ -11,17 +11,20 @@ extern int yylex_destroy();
 extern int open_file(char *);
 extern void close_file();
 extern char **input_stream;
+
 char *pretty = (char *) 1;
 int should_quit = 0;
 int has_error = 0;
 int verbose;
+int echo;
+int colorize;
 
 #define PROMPT ">> "
 
 /* ------ readline custom completion functions ------ */
 
 const char *compl_dict[] = {
-        "exit", "quit", "load", "clear", NULL
+        "exit", "quit", "load", "clear", "verbose", "echo", NULL
 };
 
 char *
@@ -40,6 +43,23 @@ compl_gen(const char *text, int state)
         }
         return NULL;
 }
+
+// char *
+// compl_from_ts(const char *text, int state)
+// {
+//         static int i, l;
+//         const char *n;
+//
+//         if (state == 0) {
+//                 i = 0;
+//                 l = strlen(text);
+//         }
+//
+//         while ((n = ts_get_next())) {
+//                 if (strncmp(n, text, l) == 0) return strdup(n);
+//         }
+//         return NULL;
+// }
 
 char **
 compl_custom(const char *text, int start, int end)
@@ -112,17 +132,24 @@ int
 main(int argc, char **argv)
 {
         const char *norepl;
+        int noecho;
+        int nocolor;
 
         signal(SIGINT, exit_handler);
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
         flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
         flag_add((const char **) &verbose, "--verbose", "-v", .help = "Write more text than usual");
+        flag_add((const char **) &noecho, "--noecho", "-E", .help = "Do not echo result");
+        flag_add((const char **) &nocolor, "--nocolor", "-C", .help = "Do not use colors");
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);
                 exit(1);
         }
+
+        echo = !noecho;
+        colorize = isatty(STDOUT_FILENO) ? !nocolor : 0;
 
         for (int i = 1; i < argc; i++) {
                 parse(argv[i]);

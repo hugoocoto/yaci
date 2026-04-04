@@ -3,3 +3,11 @@ b = a as str;
 b eq! "12.4";
 c = b as num;
 a eq! c;
+
+1 as list eq! {1};
+{1} as num eq! 1;
+1 as list as num eq! 1;
+
+"1" as list eq! {"1"};
+{"1"} as str eq! "1";
+"1" as list as str eq! "1";
