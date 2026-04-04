@@ -20,7 +20,6 @@ call(Call call)
         // Invoke the function.
         void *func = dlsym(RTLD_DEFAULT, call.func_name);
         if (!func) {
-                printf("Could not find function name `%s`\n", call.func_name);
                 return 1;
         }
 

@@ -106,7 +106,7 @@ expr:
     | VAR { 
         if (!$1->assigned) { 
             yyerror("Variable not defined"); 
-            if (verbose) yyerror("Maybe you want to type `a = 1`");
+            if (verbose) yyerror("Maybe you want to type `%s = 1`", $1->value.as.str);
             YYERROR; 
         }
         $$ = $1->value; 
@@ -129,7 +129,8 @@ expr:
     }
     | VAR '=' '\n' { 
         yyerror("Assign operation needs a value");
-        if (verbose) yyerror("Don't forget to write the value after the `=`, `a = 1`");
+        if (verbose) yyerror("Don't forget to write the value after the `=` as "
+                             "in `%s = 1`", $1->value.as.str);
         YYERROR;
     }
 
@@ -142,13 +143,18 @@ expr:
     }
     | CONST VAR '=' '\n' { 
         yyerror("Assign operation needs a value");
-        if (verbose) yyerror("Don't forget to write the value after the `=`, `a = 1`");
+        if (verbose) yyerror("Don't forget to write the value after the `=` as "
+                             "in `%s = 1`", $2->value.as.str);
         YYERROR;
     }
 
     | VAR '(' list ')' { 
-        if (!$1->callable && !$1->assigned){
+        if (!$1->assigned){
             $$ = lit_call($1->value, $3); 
+            if ($$.type == ERROR){
+                yyerror("Could not find any function with this signature"); 
+                YYERROR; 
+            }
         }
         else if (!$1->callable && $1->assigned) { 
             yyerror("Calling a non-callable var"); 
@@ -160,7 +166,8 @@ expr:
     }
     | VAR '(' list '\n' { 
         yyerror("Unclosed parenthesis");
-        if (verbose) yyerror("Don't forget to close it as in `func(1)`");
+        if (verbose) yyerror("Don't forget to close it as in `%s(...)`", 
+                             $1->value.as.str);
         YYERROR;
     }
 
