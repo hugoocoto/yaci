@@ -21,7 +21,7 @@ int verbose;
 /* ------ readline custom completion functions ------ */
 
 const char *compl_dict[] = {
-        "exit", "quit", "load", NULL
+        "exit", "quit", "load", "clear", NULL
 };
 
 char *

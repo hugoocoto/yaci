@@ -46,6 +46,10 @@ DECIMAL [[:digit:]]+
 FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})
 EXP [eE][-+]?{DECIMAL}
 
+ERR_EXP ([eE][-+][-+]+{DECIMAL})|([eE][+-]?[^[:digit:]])
+ERR_NUMBER {ERR_FLOAT}
+ERR_FLOAT ("."{DECIMAL}{ERR_EXP}?)|({DECIMAL}{ERR_EXP})
+
 /* chars (numbers) */
 CHAR "'"[^']"'"
 /* if it's not closed it raises unclosed string error */
@@ -128,6 +132,7 @@ PAR_OR_NOT ("("{WS}?")")?
 .           { yyerror("Unknown token `%s`\n", yytext); }
 {ERR_SQSTR} { yyerror("Unclosed string `%s`\n", trim_right(yytext)); }
 {ERR_DQSTR} { yyerror("Unclosed string `%s`\n", trim_right(yytext)); }
+{ERR_FLOAT} { yyerror("Malformed number `%s`\n", trim_right(yytext)); }
 
 %%
 
