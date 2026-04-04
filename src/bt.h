@@ -38,6 +38,9 @@
 extern "C" {
 #endif
 
+#ifndef BT_H_
+#define BT_H_
+
 typedef struct BT BT;
 
 typedef void (*Value_Delete_Callback)(void *);
@@ -48,9 +51,6 @@ extern void bt_destroy(BT *);                            /* Destroy the tree */
 extern void bt_write(void *f, BT *);                     /* Print the tree to FILE* f */
 extern void bt_write_pretty(void *f, BT *tree);          /* Print the tree but prettier */
 extern char *bt_get_key_addr(BT *tree, const char *key); /* Get the address of the key that matches key or NULL */
-
-#ifndef BT_H_
-#define BT_H_
 
 typedef enum BT_Dir {
         BT_LEFT,

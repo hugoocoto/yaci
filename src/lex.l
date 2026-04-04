@@ -69,7 +69,7 @@ ERR_SQSTR "'"{SQSTRCHR}*\n
 PATH ({PATH_START}{PATH_DIR}*{PATH_TEXT})|("<"{PATH_DIR}*{PATH_TEXT}">")
 PATH_START ("."|"..")"/"
 PATH_DIR ({PATH_TEXT}|"."|"..")"/"
-PATH_TEXT [^/[:space:];]+
+PATH_TEXT [[:alnum:]_!@#$<>:|?*. -]+
 
 /* booleans for commands */
 TRUE ([Tt][Rr][Uu][Ee])|([Oo][Nn])|([Yy][Ee][Ss])
@@ -82,7 +82,7 @@ ID [[:alpha:]_][[:alnum:]_]*
 WS [ \f\r\t\v]+
 
 /* Single Char Token */
-SCT [+/*^(){}\[\];.,=-]
+SCT [+/*^(){}\[\];.,=`-]
 
 /* alpha operators */
 ASSERT "eq!"
@@ -104,8 +104,10 @@ CLEAR [Cc][Ll][Ee][Aa][Rr]{PAR_OR_NOT}
 QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
 WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
 LOAD [Ll][Oo][Aa][Dd]
+OPEN ([Oo][Pp][Ee][Nn])|([Ll][Ii][Nn][Kk])
 VERBOSE [Vv][Ee][Rr][Bb][Oo][Ss][Ee]
 ECHO [Ee][Cc][Hh][Oo]
+HELP [Hh][Ee][Ll][Pp]{PAR_OR_NOT}
 
 PAR_OR_NOT ("("{WS}?")")?
 
@@ -124,6 +126,7 @@ PAR_OR_NOT ("("{WS}?")")?
 {ASSERT}    { return ASSERT; }
 {VERBOSE}   { return VERBOSE; }
 {ECHO}      { return T_ECHO; }
+{OPEN}      { return OPEN; }
 
 {TRUE}      { return TRUE; }
 {FALSE}     { return FALSE; }

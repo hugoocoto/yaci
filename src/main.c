@@ -131,15 +131,15 @@ exit_handler(int sig)
 int
 main(int argc, char **argv)
 {
-        const char *norepl;
+        int norepl;
         int noecho;
         int nocolor;
 
         signal(SIGINT, exit_handler);
 
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
-        flag_add(&norepl, "--norepl", .help = "Do not enter repl mode");
-        flag_add((const char **) &verbose, "--verbose", "-v", .help = "Write more text than usual");
+        flag_add((const char **) &norepl, "--norepl", .help = "Do not enter repl mode");
+        flag_add((const char **) &verbose, "--verbose", "-v", .help = "Give hints and show a little more info");
         flag_add((const char **) &noecho, "--noecho", "-E", .help = "Do not echo result");
         flag_add((const char **) &nocolor, "--nocolor", "-C", .help = "Do not use colors");
 

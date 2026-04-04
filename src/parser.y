@@ -12,9 +12,12 @@ extern int has_error;
 extern int yylex();
 extern int should_quit;
 extern int load(char *);
+extern int link_lib(char *);
 extern int open_file(char*);
 extern void close_file();
 extern int yyerror(const char*, ...);
+extern int yyhint(const char*, ...);
+
 %}
 
 %union {
@@ -44,8 +47,12 @@ extern int yyerror(const char*, ...);
 %token T_ECHO        
 %token TRUE        
 %token FALSE        
+%token HELP        
+%token OPEN        
 
 %type <val> expr
+%type <val> strange_quote_error
+%type <val> silentexpr
 %type <val> list
 %type <val> nzlist
 
@@ -72,9 +79,9 @@ line:
         if (echo) printf("\n"); 
     }
     | expr ';' '\n' { }
-    | error { }
     | ';' '\n'
     | '\n'
+    | error { if (verbose) yyhint("Type `help` for aditional help"); }
 
     | CLEAR '\n' { printf("\033[H\033[2J"); }
     | WORKSPACE '\n' { ts_print(); }
@@ -88,14 +95,27 @@ line:
 
     | LOAD VAR '\n' { if (load($2->value.as.str)) YYERROR; }
     | LOAD PATH '\n' { if (load($2.as.str)) YYERROR; }
+    | OPEN VAR '\n' { if (link_lib($2->value.as.str)) YYERROR; }
+    | OPEN PATH '\n' { if (link_lib($2.as.str)) YYERROR; }
     | VERBOSE TRUE '\n' { verbose = 1; }
     | VERBOSE FALSE '\n' { verbose = 0; }
     | T_ECHO TRUE '\n' { echo = 1; }
     | T_ECHO FALSE '\n' { echo = 0; }
 
-    | LOAD '\n' { yyerror("load expects a path: `./path`, `<path>` or a variable"); YYERROR; }
+    | LOAD '\n' { 
+        yyerror("load expects a path");
+        if (verbose) yyhint("Write one of `./path`, `<path>` or a variable"); 
+        if (verbose) yyhint("Write ./ and <tab><tab> to get suggestions"); 
+        YYERROR; 
+    }
     | VERBOSE '\n' { yyerror("verbose expects one of `on`, `off`, `true` or `false`"); YYERROR; }
     | T_ECHO '\n' { yyerror("echo expects one of `on`, `off`, `true` or `false`"); YYERROR; }
+    | HELP '\n' { yyerror("Sorry, you're on your own"); YYERROR; }
+    | LOAD strange_quote_error '\n' { }
+    | OPEN strange_quote_error '\n' { }
+    | VERBOSE strange_quote_error '\n' { }
+    | T_ECHO strange_quote_error '\n' { }
+    | strange_quote_error '\n' { }
     ;
 
 expr: 
@@ -105,12 +125,14 @@ expr:
     | '{' list '}' { $$ = $2; }
     | VAR { 
         if (!$1->assigned) { 
-            yyerror("Variable not defined"); 
-            if (verbose) yyerror("Maybe you want to type `%s = 1`", $1->value.as.str);
+            yyerror("Variable `%s` not defined", $1->value.as.str); 
+            if (verbose) yyhint("Maybe you want to type `%s = 1`", $1->value.as.str);
             YYERROR; 
         }
         $$ = $1->value; 
     }
+    | TRUE { $$ = double_to_lit(1); }
+    | FALSE { $$ = double_to_lit(0); }
 
     | expr ASSERT expr { 
         if (lit_neq($1, $3)) { yyerror("Assertion error: Values doesn't match"); exit(1); } 
@@ -129,21 +151,21 @@ expr:
     }
     | VAR '=' '\n' { 
         yyerror("Assign operation needs a value");
-        if (verbose) yyerror("Don't forget to write the value after the `=` as "
+        if (verbose) yyhint("Don't forget to write the value after the `=` as "
                              "in `%s = 1`", $1->value.as.str);
         YYERROR;
     }
 
     | CONST VAR '=' expr { 
         if ($2->constant) { yyerror("Assigning to a constant var"); YYERROR; }
-        if ($2->assigned) { yyerror("Changing var signature"); YYERROR; }
+        if ($2->assigned) { yyerror("Can't change var signature"); YYERROR; }
         $2->assigned = true;
         $2->constant = true;
         $$ = $2->value = $4;
     }
     | CONST VAR '=' '\n' { 
         yyerror("Assign operation needs a value");
-        if (verbose) yyerror("Don't forget to write the value after the `=` as "
+        if (verbose) yyhint("Don't forget to write the value after the `=` as "
                              "in `%s = 1`", $2->value.as.str);
         YYERROR;
     }
@@ -152,12 +174,16 @@ expr:
         if (!$1->assigned){
             $$ = lit_call($1->value, $3); 
             if ($$.type == ERROR){
-                yyerror("Could not find any function with this signature"); 
+                yyerror("Couldn't find any function with this signature"); 
+                if (verbose) yyhint("Make sure %s exists and it's linked",
+                                     $1->value.as.str); 
                 YYERROR; 
             }
         }
         else if (!$1->callable && $1->assigned) { 
             yyerror("Calling a non-callable var"); 
+                if (verbose) yyhint("You can only call functions from linked "
+                                     "libraries"); 
             YYERROR; 
         } 
         else {
@@ -166,7 +192,7 @@ expr:
     }
     | VAR '(' list '\n' { 
         yyerror("Unclosed parenthesis");
-        if (verbose) yyerror("Don't forget to close it as in `%s(...)`", 
+        if (verbose) yyhint("Don't forget to close it as in `%s(...)`", 
                              $1->value.as.str);
         YYERROR;
     }
@@ -179,6 +205,29 @@ expr:
     | expr '^' expr { $$ = lit_pow($1, $3); }
     | '(' expr ')' { $$ = $2; }
 
+silentexpr:  { }
+    | NUM  { }
+    | STR  { }
+    | PATH  { }
+    | '{' list '}'  { }
+    | VAR  { }
+    | TRUE  { }
+    | FALSE  { }
+    | expr ASSERT expr  { }
+    | expr AS TYPE  { }
+    | VAR '=' expr  { }
+    | VAR '=' '\n'  { }
+    | CONST VAR '=' expr  { }
+    | CONST VAR '=' '\n'  { }
+    | VAR '(' list ')'  { }
+    | VAR '(' list '\n'  { }
+    | expr '+' expr  { }
+    | expr '-' expr  { }
+    | expr '*' expr  { }
+    | expr '/' expr  { }
+    | '-' expr %prec NEG  { }
+    | expr '^' expr  { }
+    | '(' expr ')'  { }
 
 list: { $$ = lit_list(); }
     | nzlist { $$ = $1; }
@@ -187,18 +236,27 @@ nzlist:
     expr { $$ = lit_list_add(lit_list(), $1); }
     | nzlist ',' expr { lit_list_add($1, $3); }
     | nzlist ',' { 
-        yyerror("Unterminated list");
-        if (verbose) yyerror("Remember that `,` have to be written between two "
+        yyerror("Malformed list");
+        if (verbose) yyhint("Remember that `,` have to be written between two "
                              "values, never at the end of the list");
         YYERROR;
     }
     | ',' {
         yyerror("Malformed list");
-        if (verbose) yyerror("Remember that `,` have to be written between two "
+        if (verbose) yyhint("Remember that `,` have to be written between two "
                              "values, never at the start of the list");
         YYERROR;
     }
     ;
+
+strange_quote_error: 
+    '`' silentexpr '`' { 
+        yyerror("Invalid separator ``");
+        if (verbose) yyhint("Separator `` is used in examples to say that the "
+                             "text between them is literally what you have to "
+                             "type. Remove them");
+        YYERROR;
+     }
 
 %%
 
@@ -211,7 +269,22 @@ int yyerror(const char*fmt, ...)
     int n = 0;
     va_start(ap, fmt);
     if (colorize) n += fprintf(stderr, "\033[31m");
-    n += fprintf(stderr, "ERROR: ");
+    n += fprintf(stderr, "Error: ");
+    n += vfprintf(stderr, fmt, ap);
+    if (colorize) n += fprintf(stderr, "\033[0m");
+    if(fmt[strlen(fmt)-1] != '\n') n+=fprintf(stderr, "\n");
+    va_end(ap);
+    has_error = 1;
+    return n;
+}
+
+int yyhint(const char*fmt, ...)
+{
+    va_list ap;
+    int n = 0;
+    va_start(ap, fmt);
+    if (colorize) n += fprintf(stderr, "\033[32m");
+    n += fprintf(stderr, "Hint: ");
     n += vfprintf(stderr, fmt, ap);
     if (colorize) n += fprintf(stderr, "\033[0m");
     if(fmt[strlen(fmt)-1] != '\n') n+=fprintf(stderr, "\n");
@@ -221,6 +294,14 @@ int yyerror(const char*fmt, ...)
 }
 
 int load(char* s){
+    if(open_file(s)){
+        yyerror("file `%s` not found", s);
+        return 1;
+    }
+    return 0;
+}
+
+int link_lib(char* s){
     if(open_file(s)){
         yyerror("file `%s` not found", s);
         return 1;
