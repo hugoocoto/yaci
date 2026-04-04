@@ -21,7 +21,7 @@ extern char *trim_right(char *c);
                 if (verbose) putchar(buf[0]);                        \
                 result = 1;                                          \
         } else {                                                     \
-        stream_case:                                                 \
+        stream_case:;                                                \
                 char *segment = input_stream ? *input_stream : NULL; \
                 if (segment == NULL)                                 \
                         result = 0;                                  \
