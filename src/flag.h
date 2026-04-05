@@ -120,18 +120,19 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-#define flag_list(x, ...) (const char *[]){ x, ##__VA_ARGS__, 0 }
+#define flag_list(x, ...) (char *[]){ x, ##__VA_ARGS__, 0 }
 
-#define MAX_FLAG_COUNT 5
+#define MAX_FLAG_COUNT 4
 
 struct flag_opts {
-        const char *opt;      // Flag (--help)
-        const char *abbr;     // Flag abbreviation (-h)
-        const char *help;     // Help message for the flag
-        int nargs;            // Number of args to catch (max 1)
-        const char *defaults; // Default value as string (default is a keyword)
-        int required;         // Set to 1 if the flag must be set
-        const char **var;     // Stores the pointer to the variable where the value should be set
+        const char *opt;        // Flag (--help)
+        const char *abbr;       // Flag abbreviation (-h)
+        const char *help;       // Help message for the flag
+        const char *defaults;   // Default value as string (default is a keyword)
+        const char **var;       // Stores the pointer to the variable where the value should be set
+        int nargs;              // Number of args to catch (max 1)
+        int required;           // Set to 1 if the flag must be set
+        signed char _need_free; // Asigned by flag.h
 };
 
 static struct program_opts {
@@ -224,7 +225,7 @@ __flag_program(struct program_opts opts)
 }
 
 static void
-__flag_pop_arg(int *argc, char **argv[], int *i)
+__flag_pop_arg(int *argc, char ***argv, int *i)
 {
         if (*i + 1 < *argc) {
                 memmove(&(*argv)[*i], &(*argv)[*i + 1], (*argc - *i - 1) * sizeof(char *));
@@ -234,15 +235,15 @@ __flag_pop_arg(int *argc, char **argv[], int *i)
 }
 
 static int
-flag_parse(int *argc, char **argv[])
+flag_parse(int *argc, char ***argv)
 {
         struct flag_opts *fopt;
         int i, j;
         int has_error = 0;
 
-        if (!flag_prog.name || !*flag_prog.name) flag_prog.name = (*argv)[0];
+        if (!flag_prog.name || !*flag_prog.name) flag_prog.name = **argv;
 
-        for (i = 1; i < *argc; i++) {
+        for (i = 0; i < *argc; i++) {
                 if (strcmp((*argv)[i], "-h") == 0 ||
                     strcmp((*argv)[i], "-help") == 0 ||
                     strcmp((*argv)[i], "--help") == 0) {
@@ -252,7 +253,7 @@ flag_parse(int *argc, char **argv[])
                 }
         }
 
-        for (i = 1; i < *argc; i++) {
+        for (i = 0; i < *argc; i++) {
                 for (j = 0; j < flag_flags.count; j++) {
                         fopt = flag_flags.flags + j;
                         if (!fopt->var) continue;
@@ -280,10 +281,12 @@ flag_parse(int *argc, char **argv[])
                                 }
                                 if ((o && (*argv)[i][strlen(fopt->opt)] == '=') ||
                                     (a && (*argv)[i][strlen(fopt->abbr)] == '=')) {
-                                        *fopt->var = strchr((*argv)[i], '=') + 1;
+                                        *fopt->var = strdup(strchr((*argv)[i], '=') + 1);
+                                        fopt->_need_free = 1;
                                 } else {
                                         ++i;
                                         *fopt->var = strdup((*argv)[i]);
+                                        fopt->_need_free = 1;
                                         __flag_pop_arg(argc, argv, &i);
                                 }
                         } else {
@@ -324,7 +327,8 @@ flag_free()
         struct flag_opts *fopt;
         for (int j = 0; j < flag_flags.count; j++) {
                 fopt = flag_flags.flags + j;
-                if (fopt->var == NULL || *fopt->var != NULL) continue;
+                if (fopt->var == NULL) continue;
+                if (!fopt->_need_free) continue;
                 free((void *) *fopt->var);
         }
 }
