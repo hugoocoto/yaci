@@ -2,9 +2,6 @@
 
 Yet Another Calculator Interpreter
 
-> [!NOTE]
-> WTF clang breaks flag.h. Now it's only compatible with gcc until I fix it.
-
 ## Features
 
 - Supports numbers and strings
@@ -28,6 +25,7 @@ Yet Another Calculator Interpreter
 - Repl by default, supports `--norepl` option
 - Interprete commands from file passing them as arguments
 - Load files on runtime
+- Hints on errors
 
 ### Tech
 
