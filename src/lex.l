@@ -127,6 +127,7 @@ PAR_OR_NOT ("("{WS}?")")?
 {VERBOSE}   { return VERBOSE; }
 {ECHO}      { return T_ECHO; }
 {OPEN}      { return OPEN; }
+{HELP}      { return HELP; }
 
 {TRUE}      { return TRUE; }
 {FALSE}     { return FALSE; }

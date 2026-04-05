@@ -5,7 +5,7 @@ jobs:
   ubuntu:
     strategy:
       matrix:
-        cc: [gcc]
+        cc: [gcc, clang]
     runs-on: ubuntu-latest
     steps:
       - name: Clone GIT repo

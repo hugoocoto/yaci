@@ -131,36 +131,32 @@ exit_handler(int sig)
 int
 main(int argc, char **argv)
 {
-        int norepl;
-        int noecho;
-        int nocolor;
+        const char *norepl_v;
+        const char *noecho_v;
+        const char *nocolor_v;
+        const char *verbose_v;
 
         signal(SIGINT, exit_handler);
 
-        printf("argv (%p)\n", &argv);
-        for (int i = 0; i < argc; i++){
-                printf("Arg[%d] = %s (%p)\n", i, argv[i], &argv[i]);
-        }
-
         flag_program(.help = "Yet Another Calculator Interpreter -- By Hugo Coto");
-        flag_add((const char **) &norepl, "--norepl", .help = "Do not enter repl mode");
-        flag_add((const char **) &verbose, "--verbose", "-v", .help = "Give hints and show a little more info");
-        flag_add((const char **) &noecho, "--noecho", "-E", .help = "Do not echo result");
-        flag_add((const char **) &nocolor, "--nocolor", "-C", .help = "Do not use colors");
+        flag_add(&norepl_v, "--norepl", .help = "Do not enter repl mode");
+        flag_add(&verbose_v, "--verbose", "-v", .help = "Give hints and show a little more info");
+        flag_add(&noecho_v, "--noecho", "-E", .help = "Do not echo result");
+        flag_add(&nocolor_v, "--nocolor", "-C", .help = "Do not use colors");
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);
                 exit(1);
         }
 
-        echo = !noecho;
-        colorize = isatty(STDOUT_FILENO) ? !nocolor : 0;
+        echo = !noecho_v;
+        colorize = isatty(STDOUT_FILENO) ? !nocolor_v : 0;
 
         for (int i = 1; i < argc; i++) {
                 parse(argv[i]);
         }
 
-        if (!norepl) repl();
+        if (!norepl_v) repl();
 
         flag_free();
         return has_error;
