@@ -45,9 +45,8 @@ extern char *trim_chars(char *s, char *cs);
 %}
 
 /* numbers */
-NUMBER {DECIMAL}|{FLOAT}|"NAN"|"INF"
 DECIMAL [[:digit:]]+
-FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})
+FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})|"NAN"|"INF"
 EXP [eE][-+]?{DECIMAL}
 
 ERR_EXP ([eE][-+][-+]+{DECIMAL})|([eE][+-]?[^[:digit:]])
@@ -105,7 +104,8 @@ BE "be"
 
 /* types */
 TYPE_STR "str"
-TYPE_NUM "num"
+TYPE_NUM "num"|"float"
+TYPE_DEC "dec"|"int"
 TYPE_LIST "list"
 
 /* commands */
@@ -121,9 +121,8 @@ HELP [Hh][Ee][Ll][Pp]{PAR_OR_NOT}
 PAR_OR_NOT ("("{WS}?")")?
 
 %%
-LIST_OF_UNSECURE_SYSTEM_LIBS
-
 {TYPE_NUM}  { yylval.type = NUM; return TYPE; }
+{TYPE_DEC}  { yylval.type = DEC; return TYPE; }
 {TYPE_STR}  { yylval.type = STR; return TYPE; }
 {TYPE_LIST}  { yylval.type = LIST; return TYPE; }
 
@@ -148,8 +147,11 @@ LIST_OF_UNSECURE_SYSTEM_LIBS
 {MINUS}     { return '-'; }
 {PLUS}      { return '+'; }
 
-{NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
-{CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
+{FLOAT}     { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
+    /* decimals are floats by default. Because math functions expects doubles */
+{DECIMAL}   { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
+{CHAR}      { yylval.val = int_to_lit(*yytext); return DEC; }
+
 {STR}       { yylval.val = str_to_lit(strdup(trim_chars(yytext, "\""))); return STR; }
 {PATH}      { LIST_OF_UNSECURE_SYSTEM_LIBS();
               yylval.val = str_to_lit(strdup(trim_chars(yytext, "\"<>"))); 

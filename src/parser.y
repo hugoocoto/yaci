@@ -28,6 +28,7 @@ extern int yyhint(const char*, ...);
 }
 
 %token <val> NUM        
+%token <val> DEC        
 %token <val> STR        
 %token <val> LIST
 %token <val> PATH        
@@ -121,6 +122,7 @@ line:
 
 expr: 
     NUM { $$ = $1; }
+    | DEC { $$ = $1; }
     | STR { $$ = $1; }
     | PATH { $$ = $1; }
     | '{' list '}' { $$ = $2; }
@@ -136,7 +138,15 @@ expr:
     | FALSE { $$ = double_to_lit(0); }
 
     | expr ASSERT expr { 
-        if (lit_neq($1, $3)) { yyerror("Assertion error: Values doesn't match"); exit(1); } 
+        if (lit_neq($1, $3)) { 
+            printf("lvalue: ");
+            lit_print($1);
+            printf("\nrvalue: ");
+            lit_print($3);
+            printf("\n");
+            yyerror("Assertion error: Values doesn't match"); 
+            exit(1); 
+        } 
         $$ = $1; 
     }
 
@@ -208,6 +218,7 @@ expr:
 
 silentexpr:  { }
     | NUM  { }
+    | DEC  { }
     | STR  { }
     | PATH  { }
     | '{' list '}'  { }

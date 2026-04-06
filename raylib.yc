@@ -1,8 +1,22 @@
 open ./raylib/src/libraylib.so
 
-InitWindow(800, 450, "raylib example - basic window");
-a = WindowShouldClose();
+InitWindow(800 as int, 450 as int, "raylib example - basic window");
+
+a = WindowShouldClose()
+
+Negro = -16777216 as int;
+Blanco = -1 as int;
+Rojo = -16776961 as int;
+Verde = -16711936 as int;
+Azul = -65536 as int;
+Amarillo = -16711681 as int;
+Cian = -256 as int;
+Magenta = -65281 as int;
+
 BeginDrawing();
+ClearBackground(Rojo);
+DrawText("Raylib", 0 as int, 0 as int, 200 as int, Blanco);
 EndDrawing();
-a = WindowShouldClose();
-a = WindowShouldClose();
+
+a = WindowShouldClose()
+

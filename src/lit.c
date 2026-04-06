@@ -36,18 +36,20 @@ Lit
 lit_call(Lit func, Lit args)
 {
         Call c = {
-                .return_type = &ffi_type_double,
+                .return_type = &ffi_type_double, // todo: let int results
                 .result = malloc(sizeof(double)),
                 .func_name = strdup(func.as.str),
         };
         switch (args.type) {
         case NUM: call_add_arg(&c, &args.as.num, &ffi_type_double); break;
+        case DEC: call_add_arg(&c, &args.as.dec, &ffi_type_sint64); break;
         case STR: call_add_arg(&c, &args.as.str, &ffi_type_pointer); break;
         case LIST:
                 for_da_each(e, *args.as.list)
                 {
                         switch (e->type) {
                         case NUM: call_add_arg(&c, &e->as.num, &ffi_type_double); break;
+                        case DEC: call_add_arg(&c, &e->as.dec, &ffi_type_sint64); break;
                         case STR: call_add_arg(&c, &e->as.str, &ffi_type_pointer); break;
                         default: assert(0 && "Unhandled type in argument list");
                         }
@@ -69,6 +71,7 @@ lit_cast(Lit a, int type)
         switch (a.type) {
         case NUM:
                 if (type == NUM) return a;
+                if (type == DEC) return int_to_lit((int) a.as.num);
                 if (type == STR) {
                         char *buf = NULL;
                         assert(asprintf(&buf, "%g", a.as.num) > 0);
@@ -83,8 +86,26 @@ lit_cast(Lit a, int type)
                        __FUNCTION__, a.type, __FILE__, __LINE__);
                 exit(127);
 
+        case DEC:
+                if (type == DEC) return a;
+                if (type == NUM) return double_to_lit((double) a.as.dec);
+                if (type == STR) {
+                        char *buf = NULL;
+                        assert(asprintf(&buf, "%d", a.as.dec) > 0);
+                        return str_to_lit(buf);
+                }
+                if (type == LIST) {
+                        Lit l = lit_list();
+                        lit_list_add(l, a);
+                        return l;
+                }
+                printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
+                       __FUNCTION__, a.type, __FILE__, __LINE__);
+                exit(127);
+
         case STR:
                 if (type == NUM) return double_to_lit(strtod(a.as.str, 0));
+                if (type == DEC) return int_to_lit(atoi(a.as.str));
                 if (type == STR) return a;
                 if (type == LIST) {
                         Lit l = lit_list();
@@ -97,6 +118,12 @@ lit_cast(Lit a, int type)
 
         case LIST:
                 if (a.as.list->count != 1) return LIT_ERROR;
+                if (type == NUM && a.as.list->data->type == DEC) {
+                        return int_to_lit((int) a.as.list->data[0].as.dec);
+                }
+                if (type == DEC && a.as.list->data->type == NUM) {
+                        return double_to_lit((double) a.as.list->data[0].as.num);
+                }
                 if (a.as.list->data->type != type) return LIT_ERROR;
                 return a.as.list->data[0];
 
@@ -114,6 +141,12 @@ double_to_lit(double d)
 }
 
 Lit
+int_to_lit(int i)
+{
+        return (Lit) { .type = DEC, .as.dec = i };
+}
+
+Lit
 str_to_lit(char *s)
 {
         return (Lit) { .type = STR, .as.str = s };
@@ -125,6 +158,7 @@ lit_print(Lit a)
         int n = 0;
         switch (a.type) {
         case NUM: return printf("%g", a.as.num);
+        case DEC: return printf("%d", a.as.dec);
         case STR: return printf("%s", a.as.str);
         case LIST:
                 n += printf("{");
@@ -148,9 +182,17 @@ bool
 lit_neq(Lit a, Lit b)
 {
         // true if a!=b, false if a==b
+
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_neq(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return true;
+
         switch (a.type) {
         case NUM: return a.as.num != b.as.num;
+        case DEC: return a.as.num != b.as.num;
         case STR: return strcmp(a.as.str, b.as.str);
         case LIST: {
                 if (a.as.list->count != b.as.list->count) return true;
@@ -173,9 +215,15 @@ lit_neq(Lit a, Lit b)
 Lit
 lit_add(Lit a, Lit b)
 {
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_add(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
         case NUM: return double_to_lit(a.as.num + b.as.num);
+        case DEC: return int_to_lit(a.as.dec + b.as.dec);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -188,9 +236,15 @@ lit_add(Lit a, Lit b)
 Lit
 lit_sub(Lit a, Lit b)
 {
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_sub(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
         case NUM: return double_to_lit(a.as.num - b.as.num);
+        case DEC: return int_to_lit(a.as.dec - b.as.dec);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -203,9 +257,15 @@ lit_sub(Lit a, Lit b)
 Lit
 lit_mul(Lit a, Lit b)
 {
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_mul(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
         case NUM: return double_to_lit(a.as.num * b.as.num);
+        case DEC: return int_to_lit(a.as.dec * b.as.dec);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -218,11 +278,19 @@ lit_mul(Lit a, Lit b)
 Lit
 lit_div(Lit a, Lit b)
 {
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_div(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
         case NUM:
-                if (b.as.num == 0) return LIT_ERROR;
+                if (b.as.num == 0.0) return LIT_ERROR;
                 return double_to_lit(a.as.num / b.as.num);
+        case DEC:
+                if (b.as.dec == 0) return LIT_ERROR;
+                return int_to_lit(a.as.dec / b.as.dec);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -235,9 +303,15 @@ lit_div(Lit a, Lit b)
 Lit
 lit_pow(Lit a, Lit b)
 {
+        if ((a.type == DEC && b.type == NUM) ||
+            (a.type == NUM && b.type == DEC)) {
+                return lit_pow(lit_cast(a, NUM), lit_cast(b, NUM));
+        }
+
         if (a.type != b.type) return LIT_ERROR;
         switch (a.type) {
         case NUM: return double_to_lit(pow(a.as.num, b.as.num));
+        case DEC: return double_to_lit(pow((double) a.as.dec, (double) b.as.dec));
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -252,6 +326,7 @@ lit_neg(Lit a)
 {
         switch (a.type) {
         case NUM: return double_to_lit(-a.as.num);
+        case DEC: return int_to_lit(-a.as.dec);
         case STR: return LIT_ERROR;
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
