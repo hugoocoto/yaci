@@ -5,11 +5,15 @@
 #include "parser.tab.h"
 #include "ts.h"
 
+#include "libnames.h"
+
 extern TS_Entry *register_id();
 extern int verbose;
 extern int yyerror(const char*, ...);
+extern int yyhint(const char*, ...);
 char **input_stream = NULL;
 extern char *trim_right(char *c);
+extern char *trim_chars(char *s, char *cs);
 
 #define YY_INPUT(buf, result, max_size)                              \
 {                                                                    \
@@ -65,11 +69,16 @@ ESCSEQ "\\"['"?\\0abfnrtv]
 ERR_DQSTR "\""{DQSTRCHR}*\n
 ERR_SQSTR "'"{SQSTRCHR}*\n
 
-/* path -> start with ./ or between <> */
-PATH ({PATH_START}{PATH_DIR}*{PATH_TEXT})|("<"{PATH_DIR}*{PATH_TEXT}">")
+/* path -> start with ./ or between <> or xxx.xx */
+PATH {REL_PATH}|{C_PATH}|{DOT_PATH}
+
+REL_PATH {PATH_START}{PATH_DIR}*{PATH_TEXT}
+C_PATH "<"{PATH_DIR}*{PATH_TEXT}">"
+DOT_PATH {PATH_DIR}*{PATH_TEXT}"."[[:alnum:]]+
+
 PATH_START ("."|"..")"/"
 PATH_DIR ({PATH_TEXT}|"."|"..")"/"
-PATH_TEXT [[:alnum:]_!@#$<>:|?*. -]+
+PATH_TEXT [[:alnum:]_!@#$<>:|?*.-]+
 
 /* booleans for commands */
 TRUE ([Tt][Rr][Uu][Ee])|([Oo][Nn])|([Yy][Ee][Ss])
@@ -112,6 +121,7 @@ HELP [Hh][Ee][Ll][Pp]{PAR_OR_NOT}
 PAR_OR_NOT ("("{WS}?")")?
 
 %%
+LIST_OF_UNSECURE_SYSTEM_LIBS
 
 {TYPE_NUM}  { yylval.type = NUM; return TYPE; }
 {TYPE_STR}  { yylval.type = STR; return TYPE; }
@@ -140,8 +150,11 @@ PAR_OR_NOT ("("{WS}?")")?
 
 {NUMBER}    { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
 {CHAR}      { yylval.val = double_to_lit(*yytext); return NUM; }
-{STR}       { yylval.val = str_to_lit(strdup(yytext)); return STR; }
-{PATH}      { yylval.val = str_to_lit(strdup(yytext)); return PATH; }
+{STR}       { yylval.val = str_to_lit(strdup(trim_chars(yytext, "\""))); return STR; }
+{PATH}      { LIST_OF_UNSECURE_SYSTEM_LIBS();
+              yylval.val = str_to_lit(strdup(trim_chars(yytext, "\"<>"))); 
+              return PATH; 
+            }
 {ID}        { yylval.tptr = register_id(); return VAR; }
 {SCT}       { return *yytext; }
 
@@ -176,6 +189,20 @@ void close_file()
         fclose(yyin);
     }
     yyin = stdin;
+}
+
+char *trim_chars(char *s, char *cs){
+    for (int i = 0; cs[i]; i++){
+        char* r = s + strlen(s) - 1;
+        while(r != s-1 && *r == cs[i]){
+            *r = 0;
+            --r;
+        }
+        while (*s == cs[i]) {
+            ++s;
+        }
+    }
+    return s;
 }
 
 char *trim_right(char *c){

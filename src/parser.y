@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #include "ts.h"
 #include "lit.h"
@@ -120,8 +121,8 @@ line:
 
 expr: 
     NUM { $$ = $1; }
-    | STR { $$ = $1; }
-    | PATH { $$ = $1; }
+    | STR { printf("STR: `%s`\n", $1.as.str); $$ = $1; }
+    | PATH { printf("PATH: `%s`\n", $1.as.str); $$ = $1; }
     | '{' list '}' { $$ = $2; }
     | VAR { 
         if (!$1->assigned) { 
@@ -296,14 +297,17 @@ int yyhint(const char*fmt, ...)
 int load(char* s){
     if(open_file(s)){
         yyerror("file `%s` not found", s);
+        yyhint("Write load ./<tab><tab> to get suggestions");
         return 1;
     }
     return 0;
 }
 
 int link_lib(char* s){
-    if(open_file(s)){
-        yyerror("file `%s` not found", s);
+    if(!dlopen(s, RTLD_NOW | RTLD_GLOBAL)){
+        yyerror("Library `%s` not found", s);
+        yyhint("Use the `./` prefix for local libraries");
+        yyhint("Use no prefix for system ones");
         return 1;
     }
     return 0;
