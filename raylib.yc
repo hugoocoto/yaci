@@ -2,7 +2,7 @@ open ./raylib/src/libraylib.so
 
 InitWindow(800 as int, 450 as int, "raylib example - basic window");
 
-a = WindowShouldClose()
+a = WindowShouldClose();
 
 Negro = -16777216 as int;
 Blanco = -1 as int;
@@ -18,5 +18,6 @@ ClearBackground(Rojo);
 DrawText("Raylib", 0 as int, 0 as int, 200 as int, Blanco);
 EndDrawing();
 
-a = WindowShouldClose()
+a = WindowShouldClose();
 
+puts("You have to kill yaci from another terminal");

@@ -7,6 +7,7 @@ Yet Another Calculator Interpreter
 - Supports numbers and strings
 - Numbers (floating point): `2.9e-1`
 - Strings: `"hello"`
+- Ints: `12 as int`, to pass int arguments to functions
 - Chars (they're numbers btw): `'c'`
 - Cast: `"12" as num`, `pi as str`
 - Constants: `pi`, `e`
@@ -26,6 +27,7 @@ Yet Another Calculator Interpreter
 - Interprete commands from file passing them as arguments
 - Load files on runtime
 - Hints on errors
+- You can call raylib from yaci
 
 ### Tech
 

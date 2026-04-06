@@ -51,6 +51,7 @@ extern int yyhint(const char*, ...);
 %token FALSE        
 %token HELP        
 %token OPEN        
+%token POLL        
 
 %type <val> expr
 %type <val> strange_quote_error
@@ -317,7 +318,7 @@ int load(char* s){
 
 int link_lib(char* s){
     if(!dlopen(s, RTLD_NOW | RTLD_GLOBAL)){
-        yyerror("Library `%s` not found: %s", s, dlerror());
+        yyerror("%s\n", s, dlerror());
         yyhint("Use the `./` prefix for local libraries");
         yyhint("Use no prefix for system ones");
         return 1;
