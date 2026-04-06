@@ -1,0 +1,8 @@
+open ./raylib/src/libraylib.so
+
+InitWindow(800, 450, "raylib example - basic window");
+a = WindowShouldClose();
+BeginDrawing();
+EndDrawing();
+a = WindowShouldClose();
+a = WindowShouldClose();

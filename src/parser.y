@@ -121,8 +121,8 @@ line:
 
 expr: 
     NUM { $$ = $1; }
-    | STR { printf("STR: `%s`\n", $1.as.str); $$ = $1; }
-    | PATH { printf("PATH: `%s`\n", $1.as.str); $$ = $1; }
+    | STR { $$ = $1; }
+    | PATH { $$ = $1; }
     | '{' list '}' { $$ = $2; }
     | VAR { 
         if (!$1->assigned) { 
@@ -305,7 +305,7 @@ int load(char* s){
 
 int link_lib(char* s){
     if(!dlopen(s, RTLD_NOW | RTLD_GLOBAL)){
-        yyerror("Library `%s` not found", s);
+        yyerror("Library `%s` not found: %s", s, dlerror());
         yyhint("Use the `./` prefix for local libraries");
         yyhint("Use no prefix for system ones");
         return 1;

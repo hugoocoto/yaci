@@ -71,7 +71,7 @@ lit_cast(Lit a, int type)
                 if (type == NUM) return a;
                 if (type == STR) {
                         char *buf = NULL;
-                        assert(asprintf(&buf, "\"%g\"", a.as.num) > 0);
+                        assert(asprintf(&buf, "%g", a.as.num) > 0);
                         return str_to_lit(buf);
                 }
                 if (type == LIST) {
@@ -84,7 +84,7 @@ lit_cast(Lit a, int type)
                 exit(127);
 
         case STR:
-                if (type == NUM) return double_to_lit(strtod(a.as.str + 1, 0));
+                if (type == NUM) return double_to_lit(strtod(a.as.str, 0));
                 if (type == STR) return a;
                 if (type == LIST) {
                         Lit l = lit_list();

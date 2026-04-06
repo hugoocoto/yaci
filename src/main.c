@@ -151,8 +151,10 @@ main(int argc, char **argv)
 
         echo = !noecho_v;
         colorize = isatty(STDOUT_FILENO) ? !nocolor_v : 0;
+        verbose = !!verbose_v;
 
         for (int i = 1; i < argc; i++) {
+                if (verbose) printf("[YACI] Filename: %s\n", argv[i]);
                 parse(argv[i]);
         }
 
