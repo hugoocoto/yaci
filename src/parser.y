@@ -139,12 +139,13 @@ expr:
 
     | expr ASSERT expr { 
         if (lit_neq($1, $3)) { 
-            printf("lvalue: ");
+            yyerror("Assertion error: ");
+            printf("  lvalue: ");
             lit_print($1);
-            printf("\nrvalue: ");
+            printf("\n  rvalue: ");
             lit_print($3);
             printf("\n");
-            yyerror("Assertion error: Values doesn't match"); 
+            yyerror("Values doesn't match"); 
             exit(1); 
         } 
         $$ = $1; 

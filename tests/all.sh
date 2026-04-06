@@ -13,7 +13,7 @@ FAILED=0
 TOTAL=0
 
 for file in ./tests/*.yc; do
-    TOTAL=$(($TOTAL + 1)); ./yaci $file --norepl --verbose || FAILED=$(($FAILED + 1));
+    TOTAL=$(($TOTAL + 1)); ./yaci $file --norepl || FAILED=$(($FAILED + 1));
 done
 
 echo
