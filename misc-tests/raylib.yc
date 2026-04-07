@@ -1,4 +1,10 @@
-open ./raylib/src/libraylib.so
+// you need raylib.so 
+// 
+// 1. clone raylib
+// 2. compile static lib
+// 3. make sure this path is correct
+
+open ./misc-tests/raylib/src/libraylib.so
 
 InitWindow(800 as int, 450 as int, "raylib example - basic window");
 
