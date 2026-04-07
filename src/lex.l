@@ -19,6 +19,9 @@ extern char *trim_chars(char *s, char *cs);
 
 %}
 
+COMMENT {SL_COMMENT}
+SL_COMMENT ("#"|"//")[^\n]*[\n]
+
 /* numbers */
 DECIMAL [[:digit:]]+
 FLOAT (({DECIMAL}"."{DECIMAL}?|"."{DECIMAL}){EXP}?)|({DECIMAL}{EXP})|"NAN"|"INF"
@@ -96,10 +99,12 @@ HELP [Hh][Ee][Ll][Pp]{PAR_OR_NOT}
 PAR_OR_NOT ("("{WS}?")")?
 
 %%
+{COMMENT}   { return '\n'; }
+
 {TYPE_NUM}  { yylval.type = NUM; return TYPE; }
 {TYPE_DEC}  { yylval.type = DEC; return TYPE; }
 {TYPE_STR}  { yylval.type = STR; return TYPE; }
-{TYPE_LIST}  { yylval.type = LIST; return TYPE; }
+{TYPE_LIST} { yylval.type = LIST; return TYPE; }
 
 {AS}        { return AS; }
 {CLEAR}     { return CLEAR; }
