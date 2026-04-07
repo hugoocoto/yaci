@@ -6,13 +6,17 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
+typedef void *YY_BUFFER_STATE;
+
 extern int yyparse();
 extern int yylex_destroy();
 extern int open_file(char *);
-extern void close_file();
 extern char **input_stream;
+extern YY_BUFFER_STATE yy_scan_string(char *);
+extern void yy_delete_buffer(YY_BUFFER_STATE);
+extern void yypush_buffer_state(YY_BUFFER_STATE);
+extern void yy_switch_to_buffer(YY_BUFFER_STATE);
 
-char *pretty = (char *) 1;
 int should_quit = 0;
 int has_error = 0;
 int verbose;
@@ -77,8 +81,6 @@ compl_custom(const char *text, int start, int end)
         return rl_completion_matches(text, compl_gen);
 }
 
-/* ----- help functions ----- */
-
 void
 repl()
 {
@@ -87,19 +89,25 @@ repl()
         rl_bind_key('\t', rl_complete);
         rl_attempted_completion_function = compl_custom;
 
-        open_file(NULL);
+        extern int yy_flex_debug;
+        yy_flex_debug = 1;
+
         char *input;
         while (!should_quit) {
                 input = readline(PROMPT);
                 if (!input) break;
-                if (*input) add_history(input);
-                input_stream = &input;
-                yyparse();
+                if (*input) {
+                        char *input_nl = calloc(1, strlen(input) + 2);
+                        strcat(input_nl, input);
+                        strcat(input_nl, "\n");
+                        add_history(input_nl);
+                        YY_BUFFER_STATE bp = yy_scan_string(input_nl);
+                        yyparse();
+                        yy_delete_buffer(bp);
+                        free(input_nl);
+                }
                 free(input);
-                fflush(stdout);
         }
-        close_file();
-        yylex_destroy();
 }
 
 int
@@ -111,7 +119,6 @@ parse(char *filename)
         }
 
         yyparse();
-        close_file();
         yylex_destroy();
         return 0;
 }

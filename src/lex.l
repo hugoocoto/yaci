@@ -7,40 +7,15 @@
 
 #include "libnames.h"
 
-extern TS_Entry *register_id();
+int include_depth = 0;
+#define MAX_INCLUDE_DEPH 600
+
 extern int verbose;
+extern TS_Entry *register_id();
 extern int yyerror(const char*, ...);
 extern int yyhint(const char*, ...);
-char **input_stream = NULL;
 extern char *trim_right(char *c);
 extern char *trim_chars(char *s, char *cs);
-
-#define YY_INPUT(buf, result, max_size)                              \
-{                                                                    \
-        if (fileno(stdin) != fileno(yyin)) {                         \
-                buf[0] = getc(yyin);                                 \
-                if (buf[0] == EOF) {                                 \
-                        goto stream_case;                            \
-                }                                                    \
-                if (verbose) putchar(buf[0]);                        \
-                result = 1;                                          \
-        } else {                                                     \
-        stream_case:;                                                \
-                char *segment = input_stream ? *input_stream : NULL; \
-                if (segment == NULL)                                 \
-                        result = 0;                                  \
-                else if (*segment == 0) {                            \
-                        buf[0] = '\n';                               \
-                        result = 1;                                  \
-                        *input_stream = NULL;                        \
-                } else {                                             \
-                        size_t avail = strnlen(segment, max_size);   \
-                        memcpy(buf, segment, avail);                 \
-                        *input_stream += avail;                      \
-                        result = avail;                              \
-                }                                                    \
-        }                                                            \
-}
 
 %}
 
@@ -168,6 +143,14 @@ PAR_OR_NOT ("("{WS}?")")?
 {ERR_DQSTR} { yyerror("Unclosed string `%s`\n", trim_right(yytext)); }
 {ERR_FLOAT} { yyerror("Malformed number `%s`\n", trim_right(yytext)); }
 
+<<EOF>> {
+    if (include_depth > 0) {
+        include_depth--;
+        yypop_buffer_state();
+    } else {
+        yyterminate();
+    }
+}
 %%
 
 #include <string.h>
@@ -175,22 +158,22 @@ PAR_OR_NOT ("("{WS}?")")?
 
 int open_file(char *filename) 
 {
-    if (filename == NULL) {
-        yyin = stdin;
-        return 0;
-    }
+    if (filename == NULL) return 0;
+
     FILE* f = fopen(filename, "r");
     if (f == NULL) return 1;
-    yyin = f;
-    return 0;
-}
 
-void close_file() 
-{
-    if (fileno(yyin) != fileno(stdin)) {
-        fclose(yyin);
+    YY_BUFFER_STATE file_buffer = yy_create_buffer(f, YY_BUF_SIZE);
+    yypush_buffer_state(file_buffer);
+
+    include_depth++; 
+    if (include_depth >= MAX_INCLUDE_DEPH){
+        yyerror("Recursion detected on load");
+        if (verbose) yyhint("Check that there isn't a load-loop");
+        exit(1);
     }
-    yyin = stdin;
+
+    return 0;
 }
 
 char *trim_chars(char *s, char *cs){

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #define memdup(x) memcpy(malloc(sizeof(x)), &(x), sizeof(x))
 
@@ -54,10 +55,27 @@ delete_table()
 void
 ts_print()
 {
-        extern char *pretty;
-        printf("----| Tabla de simbolos |----\n");
-        pretty ? bt_write_pretty(stdout, &ts) : bt_write(stdout, &ts);
-        printf("-----------------------------\n");
+        BT *it;
+        for_bt_each(it, &ts)
+        {
+                TS_Entry *e = it->value;
+                switch (e->type) {
+                case STR:
+                case NUM:
+                case DEC:
+                        printf("%s: ", it->key);
+                        lit_print(e->value);
+                        break;
+                default:
+                        printf("%s: %p", it->key, it->value);
+                        break;
+                }
+
+                if (e->assigned) printf(", assigned");
+                if (e->constant) printf(", constant");
+                if (e->callable) printf(", callable");
+                printf("\n");
+        }
 }
 
 void
