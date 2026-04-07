@@ -20,4 +20,4 @@ EndDrawing();
 
 a = WindowShouldClose();
 
-puts("You have to kill yaci from another terminal");
+puts("!! --> You have to kill yaci from another terminal");

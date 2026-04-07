@@ -147,6 +147,9 @@ PAR_OR_NOT ("("{WS}?")")?
     if (include_depth > 0) {
         include_depth--;
         yypop_buffer_state();
+        if (!YY_CURRENT_BUFFER) {
+            yyterminate();
+        }
     } else {
         yyterminate();
     }

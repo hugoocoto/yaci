@@ -1,0 +1,5 @@
+load ./tests/include.yc
+
+_one eq! one;
+_two eq! two;
+_three eq! three;

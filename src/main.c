@@ -119,7 +119,6 @@ parse(char *filename)
         }
 
         yyparse();
-        yylex_destroy();
         return 0;
 }
 
@@ -167,6 +166,7 @@ main(int argc, char **argv)
 
         if (!norepl_v) repl();
 
+        yylex_destroy();
         flag_free();
         return has_error;
 }
