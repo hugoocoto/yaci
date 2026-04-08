@@ -1,3 +1,5 @@
+%token-table
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,6 +7,7 @@
 
 #include "ts.h"
 #include "lit.h"
+#include "da.h"
 
 extern int verbose;
 extern int colorize;
@@ -88,6 +91,8 @@ line:
 
     | CLEAR '\n' { printf("\033[H\033[2J"); }
     | WORKSPACE '\n' { ts_print(); }
+    | WORKSPACE VAR '\n' { ts_print_entry($2); }
+    | WORKSPACE TYPE '\n' { ts_print_by_type($2); }
 
     | QUIT '\n' {
         fflush(stdout);

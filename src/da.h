@@ -18,7 +18,7 @@
 
 // add E to DA_PTR that is a pointer to a DA of the same type as E
 #define da_append(da_ptr, ...)                                                                \
-        ({                                                                                    \
+        do {                                                                                  \
                 if ((da_ptr)->count >= (da_ptr)->capacity) {                                  \
                         (da_ptr)->capacity = (da_ptr)->capacity ? (da_ptr)->capacity * 2 : 4; \
                         (da_ptr)->data = DA_REALLOC(                                          \
@@ -26,28 +26,27 @@
                         sizeof(*((da_ptr)->data)) * (da_ptr)->capacity);                      \
                 }                                                                             \
                 (da_ptr)->data[(da_ptr)->count++] = (__VA_ARGS__);                            \
-                (da_ptr)->count - 1;                                                          \
-        })
+        } while (0)
 
 /* Destroy DA pointed by DA_PTR. DA can be initialized again but previous
  * values are not accessible anymore. */
 #define da_destroy(da_ptr)              \
-        ({                              \
+        do {                            \
                 (da_ptr)->capacity = 0; \
                 (da_ptr)->count = 0;    \
                 free((da_ptr)->data);   \
                 (da_ptr)->data = NULL;  \
-        })
+        } while (0)
 
 /* Insert element E into DA pointed by DA_PTR at index I. */
 #include <string.h> // memmove
 #define da_insert(da_ptr, e, i)                                                  \
-        ({                                                                       \
+        do {                                                                     \
                 da_append((da_ptr), (__typeof__((e))) { 0 });                    \
                 memmove((da_ptr)->data + (i) + 1, (da_ptr)->data + (i),          \
                         ((da_ptr)->count - (i) - 1) * sizeof *((da_ptr)->data)); \
                 (da_ptr)->data[(i)] = (e);                                       \
-        })
+        } while (0)
 
 /* Get size */
 #define da_getsize(da) ((da).count)
@@ -57,14 +56,14 @@
 
 /* Remove element al index I */
 #define da_remove(da_ptr, i)                                               \
-        ({                                                                 \
+        do {                                                               \
                 if ((i) >= 0 && (i) < (da_ptr)->count) {                   \
                         --(da_ptr)->count;                                 \
                         memmove(                                           \
                         (da_ptr)->data + (i), (da_ptr)->data + (i) + 1,    \
                         ((da_ptr)->count - (i)) * sizeof *(da_ptr)->data); \
                 }                                                          \
-        })
+        } while (0)
 
 /* can be used as:
  * for_da_each(i, DA), where

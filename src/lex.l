@@ -17,6 +17,19 @@ extern int yyhint(const char*, ...);
 extern char *trim_right(char *c);
 extern char *trim_chars(char *s, char *cs);
 
+DA(const char*) queue = {0};
+void q_push(const char *c) { da_append(&queue, (c)); }
+void q_pop() { da_remove(&queue, queue.count - 1); }
+const char* q_top() { return queue.data[queue.count - 1]; }
+
+void yy_init_queue(){
+    q_push(OWNER_REPL); set_owner(q_top());
+}
+
+__attribute__((destructor)) void free_queue(){
+    da_destroy(&queue);
+}
+
 %}
 
 COMMENT {SL_COMMENT}
@@ -150,12 +163,15 @@ PAR_OR_NOT ("("{WS}?")")?
 
 <<EOF>> {
     if (include_depth > 0) {
+        q_pop(); set_owner(q_top());
         include_depth--;
         yypop_buffer_state();
         if (!YY_CURRENT_BUFFER) {
+            q_push(OWNER_REPL);
             yyterminate();
         }
     } else {
+        q_push(OWNER_REPL);
         yyterminate();
     }
 }
@@ -170,6 +186,8 @@ int open_file(char *filename)
 
     FILE* f = fopen(filename, "r");
     if (f == NULL) return 1;
+
+    q_push(strdup(filename)); set_owner(q_top());
 
     YY_BUFFER_STATE file_buffer = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(file_buffer);

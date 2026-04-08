@@ -6,6 +6,8 @@
 #include <stdbool.h>
 
 typedef struct TS_Entry {
+        const char *key;
+        const char *owner;
         Lit value;
         bool assigned; // false by default
         bool constant; // false by default
@@ -13,9 +15,17 @@ typedef struct TS_Entry {
         int type;
 } TS_Entry;
 
-extern void ts_add(const char *key, TS_Entry entry); // añade entry a la tabla de simbolos, indexada por key
-extern TS_Entry *ts_get(const char *key);            // obtiene una entrada dada una key, o NULL si no existe
-extern void ts_print();                              // pinta el arbol
-extern char *ts_get_key_addr(const char *key);       // obtiene la direccion de memoria de una key
+extern const char *const OWNER_REPL;
+extern const char *const OWNER_CNST;
+
+extern void set_owner(const char *);
+extern const char *get_owner();
+
+extern void ts_add(const char *key, TS_Entry entry);
+extern TS_Entry *ts_get(const char *key);
+extern void ts_print();
+extern int ts_print_entry(TS_Entry *e);
+extern void ts_print_by_type(int type);
+extern char *ts_get_key_addr(const char *key);
 
 #endif // !TS_H_

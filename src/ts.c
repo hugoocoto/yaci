@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
 
 #define memdup(x) memcpy(malloc(sizeof(x)), &(x), sizeof(x))
 
@@ -15,11 +14,49 @@
 
 static BT ts = { 0 };
 
+const char *const OWNER_REPL =  "__REPL__";
+const char *const OWNER_CNST = "__CNST__";
+
+const char *current_owner = OWNER_CNST;
+
+void
+set_owner(const char *owner)
+{
+        current_owner = owner;
+}
+
+const char *
+get_owner()
+{
+        return current_owner;
+}
+
+static char *
+token_name(int tok)
+{
+        static char *lut[] = {
+                [NUM] = "num",
+                [DEC] = "dec",
+                [STR] = "str",
+        };
+        switch (tok) {
+        case NUM:
+        case DEC:
+        case STR:
+                return lut[tok];
+        }
+        return "unknown";
+}
+
 __attribute__((constructor)) static void
 insert_keywords()
 {
-#define ts_add_num_const(strlit, val) \
-        ts_add((strlit), (TS_Entry) { .value = (Lit) { .type = NUM, .as.num = (val) }, .assigned = 1, .constant = 1, .type = NUM })
+#define ts_add_num_const(strlit, val)                                                  \
+        ts_add((strlit), (TS_Entry) { .value = (Lit) { .type = NUM, .as.num = (val) }, \
+                                      .assigned = 1,                                   \
+                                      .constant = 1,                                   \
+                                      .type = NUM,                                     \
+                                      .owner = current_owner })
 
         /* Constants from math.h */
         ts_add_num_const("e", M_E);           /* e */
@@ -52,36 +89,51 @@ delete_table()
         bt_destroy(&ts);
 }
 
+int
+ts_print_entry(TS_Entry *e)
+{
+        if (!e) return 1;
+        printf("%s: ", e->key);
+        lit_print(e->value);
+
+        printf(" (%s)", token_name(e->type));
+
+        if (e->assigned) printf(", assigned");
+        if (e->constant) printf(", constant");
+        if (e->callable) printf(", callable");
+        printf(", owner='%s'", e->owner);
+        printf("\n");
+        return 0;
+}
+
+void
+ts_print_by_type(int type)
+{
+        BT *it;
+        for_bt_each(it, &ts)
+        {
+                TS_Entry *e = it->value;
+                if (e->type == type) ts_print_entry(e);
+        }
+}
+
+
 void
 ts_print()
 {
         BT *it;
         for_bt_each(it, &ts)
         {
-                TS_Entry *e = it->value;
-                switch (e->type) {
-                case STR:
-                case NUM:
-                case DEC:
-                        printf("%s: ", it->key);
-                        lit_print(e->value);
-                        break;
-                default:
-                        printf("%s: %p", it->key, it->value);
-                        break;
-                }
-
-                if (e->assigned) printf(", assigned");
-                if (e->constant) printf(", constant");
-                if (e->callable) printf(", callable");
-                printf("\n");
+                ts_print_entry(it->value);
         }
 }
 
 void
 ts_add(const char *key, TS_Entry entry)
 {
+        entry.owner = current_owner;
         bt_add(&ts, key, memdup(entry));
+        ts_get(key)->key = ts_get_key_addr(key);
 }
 
 TS_Entry *

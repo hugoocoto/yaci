@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "flag.h"
+#include "ts.h"
 #include <readline/history.h>
 #include <readline/readline.h>
 
@@ -91,6 +92,8 @@ repl()
 
         extern int yy_flex_debug;
         yy_flex_debug = 1;
+        extern void yy_init_queue();
+        yy_init_queue();
 
         char *input;
         while (!should_quit) {
@@ -104,15 +107,16 @@ repl()
                         YY_BUFFER_STATE bp = yy_scan_string(input_nl);
                         yyparse();
                         yy_delete_buffer(bp);
-                        free(input_nl);
+                        // free(input_nl);
                 }
-                free(input);
+                // free(input);
         }
 }
 
 int
 parse(char *filename)
 {
+        set_owner(strdup(filename)); // how i'm going to free this?
         if (open_file(filename)) {
                 perror(filename);
                 return 1;
