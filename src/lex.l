@@ -89,6 +89,7 @@ MINUS "minus"
 PLUS "plus"
 LET "let"
 BE "be"
+ARROW "->"
 
 /* types */
 TYPE_STR "str"
@@ -127,6 +128,7 @@ PAR_OR_NOT ("("{WS}?")")?
 {ECHO}      { return T_ECHO; }
 {OPEN}      { return OPEN; }
 {HELP}      { return HELP; }
+{ARROW}     { return ARROW; }
 
 {TRUE}      { return TRUE; }
 {FALSE}     { return FALSE; }

@@ -2,3 +2,12 @@ log(e) eq! 1;
 log(e^2) eq! 2;
 log(e^(1/2)) eq! 0.5;
 log(exp(3)) eq! 3;
+
+// int return type -- using strcspn just because
+strcspn("012345", "5")->int eq! 5 as int;
+strcspn("56789", "5")->int eq! 0 as int;
+strcspn("0123456789", "5")->int eq! 5 as int;
+
+hello = strdup("hello")->str;
+strcmp(hello, "hello")->int eq! 0;
+free(hello);

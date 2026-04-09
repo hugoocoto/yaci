@@ -56,6 +56,7 @@ extern int yyhint(const char*, ...);
 %token HELP        
 %token OPEN        
 %token POLL        
+%token ARROW
 
 %type <val> expr
 %type <val> strange_quote_error
@@ -190,6 +191,32 @@ expr:
         YYERROR;
     }
 
+    | VAR '(' list ')' ARROW TYPE { 
+        if (!$1->assigned){
+            $$ = lit_call($1->value, $3, $6); 
+            if ($$.type == ERROR){
+                yyerror("Couldn't find any function with this signature"); 
+                if (verbose) yyhint("Make sure %s exists and it's linked",
+                                     $1->value.as.str); 
+                YYERROR; 
+            }
+            $1->callable = true;
+            $1->assigned = true;
+            $1->constant = true;
+            $1->type = FUN;
+            $1->value.type = FUN;
+        }
+        else if (!$1->callable && $1->assigned) { 
+            yyerror("Calling a non-callable var"); 
+                if (verbose) yyhint("You can only call functions from linked "
+                                     "libraries"); 
+            YYERROR; 
+        } 
+        else {
+            $$ = lit_call($1->value, $3, $6); // returns double by default
+        }
+    }
+
     | VAR '(' list ')' { 
         if (!$1->assigned){
             $$ = lit_call($1->value, $3, NUM); // returns double by default
@@ -212,7 +239,7 @@ expr:
             YYERROR; 
         } 
         else {
-            $$ = lit_call($1->value, $3, NUM); // returns double by default
+            $$ = lit_call($1->value, $3, NUM); 
         }
     }
     | VAR '(' list '\n' { 

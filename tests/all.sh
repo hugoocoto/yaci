@@ -14,8 +14,12 @@ TOTAL=0
 
 for file in $(ls ./tests/*.yc | shuf); do
     echo "TEST: $file"
-    TOTAL=$(($TOTAL + 1)); ./yaci $file --norepl || FAILED=$(($FAILED + 1));
+    TOTAL=$(($TOTAL + 1)); 
+    ./yaci $file --norepl || FAILED=$(($FAILED + 1));
 done
+
+TOTAL=$(($TOTAL + 1)); 
+printf "a=1;\na\nexit" | ./yaci 1>/dev/null || FAILED=$(($FAILED + 1));
 
 echo
 echo "TEST SUMMARY"
