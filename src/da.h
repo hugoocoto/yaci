@@ -30,12 +30,15 @@
 
 /* Destroy DA pointed by DA_PTR. DA can be initialized again but previous
  * values are not accessible anymore. */
-#define da_destroy(da_ptr)              \
-        do {                            \
-                (da_ptr)->capacity = 0; \
-                (da_ptr)->count = 0;    \
-                free((da_ptr)->data);   \
-                (da_ptr)->data = NULL;  \
+#define da_destroy(da_ptr)                                      \
+        do {                                                    \
+                if ((da_ptr) == 0) break;                       \
+                if ((da_ptr)->data && (da_ptr)->capacity > 0) { \
+                        free((da_ptr)->data);                   \
+                }                                               \
+                (da_ptr)->capacity = 0;                         \
+                (da_ptr)->count = 0;                            \
+                (da_ptr)->data = NULL;                          \
         } while (0)
 
 /* Insert element E into DA pointed by DA_PTR at index I. */

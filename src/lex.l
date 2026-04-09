@@ -1,6 +1,8 @@
 %option noinput nounput noyywrap
 
 %{
+#include <assert.h>
+
 #include "lit.h"
 #include "parser.tab.h"
 #include "ts.h"
@@ -19,16 +21,11 @@ extern char *trim_chars(char *s, char *cs);
 
 DA(const char*) queue = {0};
 void q_push(const char *c) { da_append(&queue, (c)); }
-void q_pop() { da_remove(&queue, queue.count - 1); }
-const char* q_top() { return queue.data[queue.count - 1]; }
+void q_pop() { if(queue.count <= 0){ assert(0 && "qpop"); } da_remove(&queue, queue.count - 1); }
+const char* q_top() { if(queue.count <= 0){ assert(0 && "qtop"); } return queue.data[queue.count - 1]; }
 
-void yy_init_queue(){
-    q_push(OWNER_REPL); set_owner(q_top());
-}
-
-__attribute__((destructor)) void free_queue(){
-    da_destroy(&queue);
-}
+void yy_init_owner_queue(){ q_push(OWNER_REPL); set_owner(q_top()); }
+void yy_free_owner_queue(){ da_destroy(&queue); }
 
 %}
 
@@ -163,15 +160,14 @@ PAR_OR_NOT ("("{WS}?")")?
 
 <<EOF>> {
     if (include_depth > 0) {
-        q_pop(); set_owner(q_top());
+        q_pop(); 
         include_depth--;
         yypop_buffer_state();
         if (!YY_CURRENT_BUFFER) {
-            q_push(OWNER_REPL);
             yyterminate();
         }
+        set_owner(q_top());
     } else {
-        q_push(OWNER_REPL);
         yyterminate();
     }
 }

@@ -9,14 +9,15 @@
 
 #include "lit.h"
 #include "ts.h"
+#include "colors.h"
 
 #include "parser.tab.h"
 
 static BT ts = { 0 };
 
-const char *const OWNER_REPL =  "__REPL__";
+extern int verbose;
+const char *const OWNER_REPL = "__REPL__";
 const char *const OWNER_CNST = "__CNST__";
-
 const char *current_owner = OWNER_CNST;
 
 void
@@ -38,11 +39,14 @@ token_name(int tok)
                 [NUM] = "num",
                 [DEC] = "dec",
                 [STR] = "str",
+                [FUN] = "fun",
+                [VAR] = "var",
         };
         switch (tok) {
         case NUM:
         case DEC:
         case STR:
+        case VAR:
                 return lut[tok];
         }
         return "unknown";
@@ -93,15 +97,50 @@ int
 ts_print_entry(TS_Entry *e)
 {
         if (!e) return 1;
-        printf("%s: ", e->key);
-        lit_print(e->value);
+        extern int colorize;
 
-        printf(" (%s)", token_name(e->type));
+        // const
+        if (e->constant) {
+                if (colorize) printf(COLOR(FGRED));
+                printf("const");
+                if (colorize) printf(COLOR(RESET));
+                printf(" ");
+        }
 
-        if (e->assigned) printf(", assigned");
-        if (e->constant) printf(", constant");
-        if (e->callable) printf(", callable");
-        printf(", owner='%s'", e->owner);
+        // type
+        if (colorize) printf(COLOR(FGRED));
+        if (e->type == VAR && e->assigned) {
+                printf("var (%s)", token_name(e->value.type));
+        } else {
+                printf("%s", token_name(e->type));
+        }
+        if (colorize) printf(COLOR(RESET));
+
+        printf(" ");
+
+        // name
+        if (colorize) printf(COLOR(FGWHITE, BOLD));
+        printf("%s", e->key);
+        if (colorize) printf(COLOR(RESET));
+
+        if (e->assigned) {
+                printf(" = ");
+
+                // value
+                if (colorize) printf(COLOR(FGRED, BOLD));
+                lit_print(e->value);
+                if (colorize) printf(COLOR(RESET));
+        } else {
+                printf(" not assigned");
+        }
+
+        if (verbose) {
+                printf(", owner=");
+                if (colorize) printf(COLOR(FGGREEN));
+                printf("'%s'", e->owner);
+                if (colorize) printf(COLOR(RESET));
+        }
+
         printf("\n");
         return 0;
 }

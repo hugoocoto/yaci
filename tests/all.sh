@@ -12,7 +12,8 @@ make compile >> /dev/null
 FAILED=0
 TOTAL=0
 
-for file in ./tests/*.yc; do
+for file in $(ls ./tests/*.yc | shuf); do
+    echo "TEST: $file"
     TOTAL=$(($TOTAL + 1)); ./yaci $file --norepl || FAILED=$(($FAILED + 1));
 done
 

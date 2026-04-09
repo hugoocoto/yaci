@@ -33,6 +33,7 @@ extern int yyhint(const char*, ...);
 %token <val> NUM        
 %token <val> DEC        
 %token <val> STR        
+%token <val> FUN        
 %token <val> LIST
 %token <val> PATH        
 %token <tptr> VAR
@@ -130,6 +131,7 @@ expr:
     NUM { $$ = $1; }
     | DEC { $$ = $1; }
     | STR { $$ = $1; }
+    | FUN { $$ = $1; }
     | PATH { $$ = $1; }
     | '{' list '}' { $$ = $2; }
     | VAR { 
@@ -190,13 +192,18 @@ expr:
 
     | VAR '(' list ')' { 
         if (!$1->assigned){
-            $$ = lit_call($1->value, $3); 
+            $$ = lit_call($1->value, $3, NUM); // returns double by default
             if ($$.type == ERROR){
                 yyerror("Couldn't find any function with this signature"); 
                 if (verbose) yyhint("Make sure %s exists and it's linked",
                                      $1->value.as.str); 
                 YYERROR; 
             }
+            $1->callable = true;
+            $1->assigned = true;
+            $1->constant = true;
+            $1->type = FUN;
+            $1->value.type = FUN;
         }
         else if (!$1->callable && $1->assigned) { 
             yyerror("Calling a non-callable var"); 
@@ -205,7 +212,7 @@ expr:
             YYERROR; 
         } 
         else {
-            $$ = lit_call($1->value, $3); 
+            $$ = lit_call($1->value, $3, NUM); // returns double by default
         }
     }
     | VAR '(' list '\n' { 
@@ -227,6 +234,7 @@ silentexpr:  { }
     | NUM  { }
     | DEC  { }
     | STR  { }
+    | FUN  { }
     | PATH  { }
     | '{' list '}'  { }
     | VAR  { }

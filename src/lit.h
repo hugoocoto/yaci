@@ -44,4 +44,4 @@ Lit lit_list();                        /* create empty list */
 Lit lit_list_add(Lit list, Lit value); /* add a value to the list */
 
 int lit_print(Lit a);
-Lit lit_call(Lit func, Lit args);
+Lit lit_call(Lit func, Lit args, int ret_type);

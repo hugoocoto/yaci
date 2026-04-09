@@ -12,11 +12,8 @@ typedef void *YY_BUFFER_STATE;
 extern int yyparse();
 extern int yylex_destroy();
 extern int open_file(char *);
-extern char **input_stream;
 extern YY_BUFFER_STATE yy_scan_string(char *);
 extern void yy_delete_buffer(YY_BUFFER_STATE);
-extern void yypush_buffer_state(YY_BUFFER_STATE);
-extern void yy_switch_to_buffer(YY_BUFFER_STATE);
 
 int should_quit = 0;
 int has_error = 0;
@@ -33,7 +30,7 @@ const char *compl_dict[] = {
 };
 
 char *
-compl_gen(const char *text, int state)
+compl_cmds(const char *text, int state)
 {
         static int i, l;
         const char *n;
@@ -49,23 +46,6 @@ compl_gen(const char *text, int state)
         return NULL;
 }
 
-// char *
-// compl_from_ts(const char *text, int state)
-// {
-//         static int i, l;
-//         const char *n;
-//
-//         if (state == 0) {
-//                 i = 0;
-//                 l = strlen(text);
-//         }
-//
-//         while ((n = ts_get_next())) {
-//                 if (strncmp(n, text, l) == 0) return strdup(n);
-//         }
-//         return NULL;
-// }
-
 char **
 compl_custom(const char *text, int start, int end)
 {
@@ -78,8 +58,9 @@ compl_custom(const char *text, int start, int end)
         }
 
         rl_attempted_completion_over = 1;
-        if (start != 0) return NULL; // start is the cursor position i guess
-        return rl_completion_matches(text, compl_gen);
+        if (start == 0) return rl_completion_matches(text, compl_cmds);
+        // else: complete with var names
+        return NULL; // start is the cursor position I guess
 }
 
 void
@@ -90,10 +71,10 @@ repl()
         rl_bind_key('\t', rl_complete);
         rl_attempted_completion_function = compl_custom;
 
-        extern int yy_flex_debug;
-        yy_flex_debug = 1;
-        extern void yy_init_queue();
-        yy_init_queue();
+        extern void yy_init_owner_queue();
+        extern void yy_free_owner_queue();
+        yy_init_owner_queue();
+        yy_free_owner_queue();
 
         char *input;
         while (!should_quit) {
@@ -107,9 +88,9 @@ repl()
                         YY_BUFFER_STATE bp = yy_scan_string(input_nl);
                         yyparse();
                         yy_delete_buffer(bp);
-                        // free(input_nl);
+                        free(input_nl);
                 }
-                // free(input);
+                free(input);
         }
 }
 
@@ -130,13 +111,11 @@ void
 exit_handler(int sig)
 {
         (void) sig;
-        putchar('\n'); /* Insecure but it works */
+        putchar('\n'); /* Unsecure but it works */
         rl_on_new_line();
         rl_replace_line("", 0);
         rl_redisplay();
 }
-
-/* ----- flags and execution loop ----- */
 
 int
 main(int argc, char **argv)

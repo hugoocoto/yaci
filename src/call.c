@@ -2,6 +2,7 @@
 #include <ffi.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "call.h"
 
 int
@@ -30,16 +31,14 @@ call(Call call)
 void
 call_free(Call call)
 {
-        // if (call.arg_types) free(call.arg_types);
-        call.arg_value_size = 0;
-        // if (call.arg_values) free(call.arg_values);
-        call.arg_value_size = 0;
-        if (call.func_name) free(call.func_name);
+        (void) call;
+        // unneded
 }
 
 void
 call_add_arg_type(Call *call, ffi_type *type)
 {
+        if (call->arg_type_size >= MAX_ARGS) return; // todo: give an error
         call->arg_types[call->arg_type_size] = type;
         ++call->arg_type_size;
 }
@@ -47,6 +46,7 @@ call_add_arg_type(Call *call, ffi_type *type)
 void
 call_add_arg_value(Call *call, void *value)
 {
+        if (call->arg_type_size >= MAX_ARGS) return; // todo: give an error
         call->arg_values[call->arg_value_size] = value;
         ++call->arg_value_size;
 }

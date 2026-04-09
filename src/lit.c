@@ -33,34 +33,52 @@ lit_free(Lit a)
 }
 
 Lit
-lit_call(Lit func, Lit args)
+lit_call(Lit func, Lit args, int ret_type)
 {
+        union {
+                int i;
+                double d;
+                char *s;
+        } result;
+
+        ffi_type* rtype;
+        switch (ret_type) {
+        case NUM: rtype = &ffi_type_double; break;
+        case DEC: rtype = &ffi_type_sint32; break;
+        case STR: rtype = &ffi_type_pointer; break;
+        default: assert(0 && "Unhandled return type");
+        }
+
         Call c = {
-                .return_type = &ffi_type_double, // todo: let int results
-                .result = malloc(sizeof(double)),
-                .func_name = strdup(func.as.str),
+                .return_type = rtype,
+                .result = &result,
+                .func_name = func.as.str,
         };
         switch (args.type) {
-        case NUM: call_add_arg(&c, &args.as.num, &ffi_type_double); break;
-        case DEC: call_add_arg(&c, &args.as.dec, &ffi_type_sint64); break;
-        case STR: call_add_arg(&c, &args.as.str, &ffi_type_pointer); break;
         case LIST:
                 for_da_each(e, *args.as.list)
                 {
                         switch (e->type) {
                         case NUM: call_add_arg(&c, &e->as.num, &ffi_type_double); break;
-                        case DEC: call_add_arg(&c, &e->as.dec, &ffi_type_sint64); break;
+                        case DEC: call_add_arg(&c, &e->as.dec, &ffi_type_sint32); break;
                         case STR: call_add_arg(&c, &e->as.str, &ffi_type_pointer); break;
                         default: assert(0 && "Unhandled type in argument list");
                         }
                 }
                 break;
-        default: assert(0 && "Unhandled type in argument list");
+        default: assert(0 && "Unhandled type in arguments");
         }
 
         if (call(c)) return LIT_ERROR;
 
-        Lit l = double_to_lit(*(double *) c.result);
+        Lit l;
+        switch (ret_type) {
+        case NUM: l = double_to_lit(result.d); break;
+        case DEC: l = int_to_lit(result.i); break;
+        case STR: l = str_to_lit(result.s); break;
+        default: assert(0 && "Unhandled return type");
+        }
+
         call_free(c);
         return l;
 }
@@ -159,7 +177,8 @@ lit_print(Lit a)
         switch (a.type) {
         case NUM: return printf("%g", a.as.num);
         case DEC: return printf("%d", a.as.dec);
-        case STR: return printf("%s", a.as.str);
+        case STR: return printf("\"%s\"", a.as.str);
+        case FUN: return printf("callable");
         case LIST:
                 n += printf("{");
                 for_da_each(e, *a.as.list)
