@@ -1,14 +1,5 @@
-// you need raylib.so 
-// 
-// 1. clone raylib
-// 2. compile static lib
-// 3. make sure this path is correct
-
 open ./misc-tests/raylib/src/libraylib.so
-
-InitWindow(800 as int, 450 as int, "raylib example - basic window");
-
-a = WindowShouldClose();
+open ./misc-tests/pollNotWindowShouldClose.so
 
 Negro = -16777216 as int;
 Blanco = -1 as int;
@@ -19,11 +10,13 @@ Amarillo = -16711681 as int;
 Cian = -256 as int;
 Magenta = -65281 as int;
 
+InitWindow(800 as int, 450 as int, "raylib example - basic window");
+
 BeginDrawing();
 ClearBackground(Rojo);
 DrawText("Raylib", 0 as int, 0 as int, 200 as int, Blanco);
 EndDrawing();
 
-a = WindowShouldClose();
+pollNotWindowShouldClose();
 
-puts("!! --> You have to kill yaci from another terminal");
+

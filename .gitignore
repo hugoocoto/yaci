@@ -7,3 +7,4 @@ readline
 raylib
 
 misc-tests/raylib
+misc-tests/pollNotWindowShouldClose.so
