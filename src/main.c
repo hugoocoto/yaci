@@ -74,7 +74,6 @@ repl()
         extern void yy_init_owner_queue();
         extern void yy_free_owner_queue();
         yy_init_owner_queue();
-        yy_free_owner_queue();
 
         char *input;
         while (!should_quit) {
@@ -92,6 +91,8 @@ repl()
                 }
                 free(input);
         }
+
+        yy_free_owner_queue();
 }
 
 int

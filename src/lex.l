@@ -20,9 +20,10 @@ extern char *trim_right(char *c);
 extern char *trim_chars(char *s, char *cs);
 
 DA(const char*) queue = {0};
+
+const char* q_top() { if(queue.count <= 0){ assert(0 && "qtop"); } return queue.data[queue.count - 1]; }
 void q_push(const char *c) { da_append(&queue, (c)); }
 void q_pop() { if(queue.count <= 0){ assert(0 && "qpop"); } da_remove(&queue, queue.count - 1); }
-const char* q_top() { if(queue.count <= 0){ assert(0 && "qtop"); } return queue.data[queue.count - 1]; }
 
 void yy_init_owner_queue(){ q_push(OWNER_REPL); set_owner(q_top()); }
 void yy_free_owner_queue(){ da_destroy(&queue); }
@@ -185,7 +186,8 @@ int open_file(char *filename)
     FILE* f = fopen(filename, "r");
     if (f == NULL) return 1;
 
-    q_push(strdup(filename)); set_owner(q_top());
+    q_push(strdup(filename)); 
+    set_owner(q_top());
 
     YY_BUFFER_STATE file_buffer = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(file_buffer);
