@@ -75,8 +75,7 @@ repl()
         char *input;
         while (!should_quit) {
                 input = readline(PROMPT);
-                if (!input) break;
-                if (*input) {
+                if (input && *input) {
                         char *input_nl = calloc(1, strlen(input) + 2);
                         strcat(input_nl, input);
                         strcat(input_nl, "\n");
@@ -86,8 +85,10 @@ repl()
                         yy_delete_buffer(bp);
                         free(input_nl);
                 }
+                if (!input) break;
                 free(input);
         }
+        clear_history();
 }
 
 #else // NO_READLINE

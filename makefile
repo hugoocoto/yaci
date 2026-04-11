@@ -1,7 +1,7 @@
 OUT = yaci
 CC = cc
 OBJ_DIR = obj
-FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline libffi` -fsanitize=address,null $(NO_ERR)
+FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline libffi`
 LIBS = -lm -lffi `pkg-config --libs readline libffi`
 INCLUDES = -Isrc
 

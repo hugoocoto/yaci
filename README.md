@@ -2,6 +2,10 @@
 
 Yet Another Calculator Interpreter
 
+## Documentation
+
+See `./docs`
+
 ## Features
 
 - Supports numbers and strings
@@ -44,16 +48,38 @@ Yet Another Calculator Interpreter
 
 - readline: you can install it using the system package manager.
   - ubuntu: `apt install libreadline-dev`
+  - macos: `brew install readline`
+
+- libffi: you can install it using the system package manager.
+  - ubuntu: `apt install libreadline-dev`
+  - macos: `brew install libffi`
 
 You can compile it from source 
+
+You can compile the interpreter using make. 
 
 ```sh
 make
 ```
 
-### Test
+### Test the compiler
 
 ```sh
 make test
 ```
 
+```sh
+valgrind --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./yaci
+```
+
+### Mac linkage errors
+
+If your compiler fail to find the libraries, I fix it by manually setting the
+following env vars.
+
+```
+export PKG_CONFIG_PATH="/opt/homebrew/opt/libffi/lib/pkgconfig:/opt/homebrew/opt/readline/lib/pkgconfig"
+export LDFLAGS="-L/opt/homebrew/opt/libffi/lib -L/opt/homebrew/opt/readline/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/libffi/include -I/opt/homebrew/opt/readline/include"
+make test
+```
