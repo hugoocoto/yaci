@@ -1,8 +1,8 @@
 OUT = yaci
 CC = cc
 OBJ_DIR = obj
-FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline` -fsanitize=address,null
-LIBS = -lm -lffi `pkg-config --libs readline`
+FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline libffi` -fsanitize=address,null 
+LIBS = -lm -lffi `pkg-config --libs readline libffi`
 INCLUDES = -Isrc
 
 SRC = $(wildcard src/*.c) src/lex.c src/parser.tab.c
@@ -35,6 +35,7 @@ clean:
 	rm -rf $(OBJ_DIR) test ./src/parser.tab.* ./src/lex.c
 
 cleanall: clean
+	cd ./misc-tests/ && make cleanall
 	rm -rf $(OUT) $(OUT).zip 
 
 test: 
@@ -42,5 +43,5 @@ test:
 
 package: $(OUT).zip
 
-$(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* 
+$(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* ./misc-tests/*
 	zip $(OUT).zip $^ --update

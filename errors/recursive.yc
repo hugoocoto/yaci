@@ -1,1 +1,1 @@
-load ./recursive.yc
+load ./errors/recursive.yc

@@ -28,6 +28,7 @@ Yet Another Calculator Interpreter
 - Load files on runtime
 - Hints on errors
 - You can call raylib from yaci
+- Etc..
 
 ### Tech
 

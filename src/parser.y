@@ -11,6 +11,7 @@
 #include "da.h"
 #include "qq.h"
 
+extern void state_reset();
 extern int verbose;
 extern int colorize;
 extern int echo;
@@ -84,18 +85,9 @@ QQ(Lit) scope_constants = {0};
 
 %%
 
-//  idk where to add the prompt
-//  {
-//       #ifndef NO_READLINE
-//       extern const char* PROMPT;
-//       printf("%s", PROMPT);
-//       #endif
-//  }
-
 program:
     | program line { 
-        for_qq_each(e, scope_constants){ lit_free(*e); }
-        scope_constants.count = 0;
+        state_reset();
     }
     ;
 
@@ -106,9 +98,13 @@ line:
         if (echo) printf("\n"); 
     }
     | expr ';' '\n' { }
-    | ';' '\n'
-    | '\n'
-    | error { if (verbose) yyhint("Type `help` for aditional help"); }
+
+    | ';' '\n' { }
+    | '\n' { }
+    | error { 
+        if (verbose) yyhint("Type `help` for aditional help"); 
+        state_reset();
+    }
 
     | CLEAR '\n' { printf("\033[H\033[2J"); }
     | WORKSPACE '\n' { ts_print(); }
@@ -382,4 +378,15 @@ Lit func_call(TS_Entry* var, Lit arg_list, int ret_type)
     } 
 
     return lit_call(var->value, arg_list, ret_type); 
+}
+
+void state_reset() {
+    for_qq_each(e, scope_constants){ lit_free(*e); }
+    scope_constants.count = 0;
+    {
+    #ifdef NO_READLINE
+        extern const char* PROMPT;
+        printf("%s", PROMPT);
+    #endif
+    }
 }
