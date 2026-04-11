@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +8,9 @@
 
 #include "bt.h"
 
+#include "colors.h"
 #include "lit.h"
 #include "ts.h"
-#include "colors.h"
 
 #include "parser.tab.h"
 
@@ -19,6 +20,7 @@ extern int verbose;
 const char *const OWNER_REPL = "__REPL__";
 const char *const OWNER_CNST = "__CNST__";
 const char *current_owner = OWNER_CNST;
+extern int INIT_ASSIGN;
 
 void
 set_owner(const char *owner)
@@ -35,19 +37,12 @@ get_owner()
 static char *
 token_name(int tok)
 {
-        static char *lut[] = {
-                [NUM] = "num",
-                [DEC] = "dec",
-                [STR] = "str",
-                [FUN] = "fun",
-                [VAR] = "var",
-        };
         switch (tok) {
-        case NUM:
-        case DEC:
-        case STR:
-        case VAR:
-                return lut[tok];
+        case NUM: return "num";
+        case DEC: return "dec";
+        case STR: return "str";
+        case FUN: return "fun";
+        case VAR: return "var";
         }
         return "unknown";
 }
@@ -57,7 +52,7 @@ insert_keywords()
 {
 #define ts_add_num_const(strlit, val)                                                  \
         ts_add((strlit), (TS_Entry) { .value = (Lit) { .type = NUM, .as.num = (val) }, \
-                                      .assigned = 1,                                   \
+                                      .assigned = A_VALUE,                             \
                                       .constant = 1,                                   \
                                       .type = NUM,                                     \
                                       .owner = current_owner })
@@ -109,7 +104,7 @@ ts_print_entry(TS_Entry *e)
 
         // type
         if (colorize) printf(COLOR(FGRED));
-        if (e->type == VAR && e->assigned) {
+        if (e->type == VAR && e->assigned == A_VALUE) {
                 printf("var (%s)", token_name(e->value.type));
         } else {
                 printf("%s", token_name(e->type));
@@ -123,7 +118,7 @@ ts_print_entry(TS_Entry *e)
         printf("%s", e->key);
         if (colorize) printf(COLOR(RESET));
 
-        if (e->assigned) {
+        if (e->assigned == A_VALUE) {
                 printf(" = ");
 
                 // value
@@ -156,6 +151,16 @@ ts_print_by_type(int type)
         }
 }
 
+void
+ts_print_by_owner(char *s)
+{
+        BT *it;
+        for_bt_each(it, &ts)
+        {
+                TS_Entry *e = it->value;
+                if (!strcmp(e->owner, s)) ts_print_entry(e);
+        }
+}
 
 void
 ts_print()
@@ -168,9 +173,38 @@ ts_print()
 }
 
 void
+ts_del_all()
+{
+        bt_destroy(&ts);
+        ts = (BT) { 0 };
+}
+
+void
+ts_del_entry(TS_Entry *e)
+{
+        bt_del(&ts, e->key);
+}
+
+int
+owner_match(const char *key, void *value, void *ctx)
+{
+        char *owner = ctx;
+        TS_Entry *e = value;
+        return !strcmp(e->owner, owner);
+        (void) key; // suppress unused warning
+}
+
+void
+ts_del_by_owner(char *owner)
+{
+        bt_del_if(&ts, owner_match, owner);
+}
+
+
+void
 ts_add(const char *key, TS_Entry entry)
 {
-        entry.owner = current_owner;
+        entry.owner = strdup(current_owner);
         bt_add(&ts, key, memdup(entry));
         ts_get(key)->key = ts_get_key_addr(key);
 }
@@ -191,9 +225,13 @@ ts_get_key_addr(const char *key)
 
 #define BT_VALUE_DELETE value_delete_callback
 void
-value_delete_callback(void *value)
+value_delete_callback(void *e)
 {
-        free(value);
+        TS_Entry *entry = e;
+        assert(entry->owner);
+        free((void *) entry->owner);
+        lit_free(entry->value);
+        free(entry);
 }
 
 #define BT_IMPLEMENTATION

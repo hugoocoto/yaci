@@ -1,0 +1,34 @@
+// if one is not deleted, it fails as you cant reassign const
+
+del _one
+load ./tests/const_one.yc
+_one eq! 1;
+del _one
+_one = 1; 
+del _one
+
+del _one
+load ./tests/const_one.yc
+_one eq! 1;
+del ./tests/const_one.yc
+_one = 1; 
+del _one
+
+del _one
+const _one = 1;
+del _one
+_one = 1;
+del _one
+
+del _one
+const _one = 1;
+del ./tests/del.yc // repl if interactive
+_one = 1;
+del _one
+
+del one
+one = 1;
+del one
+
+del "__CNST__"
+two = 2;

@@ -18,8 +18,11 @@ for file in $(ls ./tests/*.yc | shuf); do
     ./yaci $file --norepl || FAILED=$(($FAILED + 1));
 done
 
-TOTAL=$(($TOTAL + 1)); 
-printf "a=1;\na\nexit" | ./yaci 1>/dev/null || FAILED=$(($FAILED + 1));
+echo "TEST: REPL 1"; TOTAL=$(($TOTAL + 1)); 
+printf "a=1;\na\nexit\n" | ./yaci 1>/dev/null || FAILED=$(($FAILED + 1));
+
+echo "TEST: REPL 2"; TOTAL=$(($TOTAL + 1)); 
+printf "a=1;\ndel '__REPL__'\nexit\n" | ./yaci 1>/dev/null || FAILED=$(($FAILED + 1));
 
 echo
 echo "TEST SUMMARY"

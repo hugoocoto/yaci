@@ -26,6 +26,7 @@ struct Lit {
 #endif
 
 void lit_free(Lit a);
+Lit lit_dup(Lit a);
 
 Lit lit_add(Lit a, Lit b); /* a + b */
 Lit lit_sub(Lit a, Lit b); /* a - b */
@@ -44,4 +45,5 @@ Lit lit_list();                        /* create empty list */
 Lit lit_list_add(Lit list, Lit value); /* add a value to the list */
 
 int lit_print(Lit a);
+int lit_print_more(Lit a);
 Lit lit_call(Lit func, Lit args, int ret_type);

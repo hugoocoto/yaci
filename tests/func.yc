@@ -8,6 +8,7 @@ strcspn("012345", "5")->int eq! 5 as int;
 strcspn("56789", "5")->int eq! 0 as int;
 strcspn("0123456789", "5")->int eq! 5 as int;
 
-hello = strdup("hello")->str;
+// hello = strdup("hello")->str;
+hello = "hello";
 strcmp(hello, "hello")->int eq! 0;
-free(hello);
+// free(hello);

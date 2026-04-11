@@ -18,17 +18,43 @@
                 .type = ERROR \
         }
 
+Lit
+lit_dup(Lit a)
+{
+        // mirror of lit_free
+        Lit l = a;
+        switch (l.type) {
+        case LIST: {
+                l = lit_list();
+                for_da_each(e, *a.as.list)
+                {
+                        lit_list_add(l, lit_dup(*e));
+                }
+        } break;
+
+        case FUN: l.as.str = strdup(l.as.str); break;
+        case STR: l.as.str = strdup(l.as.str); break;
+        }
+
+        return l;
+}
+
 void
 lit_free(Lit a)
 {
+        // mirror of lit_dup
         switch (a.type) {
         case LIST:
-                for_da_each(e, *a.as.list)
-                {
-                        lit_free(*e);
-                }
+                // for_da_each(e, *a.as.list)
+                // {
+                //         lit_free(*e);
+                // }
+                da_destroy(a.as.list);
                 free(a.as.list);
                 break;
+        case STR: free(a.as.str); break;
+        case FUN: free(a.as.str); break;
+        case VAR: assert(0 && "var?");
         }
 }
 
@@ -41,7 +67,7 @@ lit_call(Lit func, Lit args, int ret_type)
                 char *s;
         } result;
 
-        ffi_type* rtype;
+        ffi_type *rtype;
         switch (ret_type) {
         case NUM: rtype = &ffi_type_double; break;
         case DEC: rtype = &ffi_type_sint32; break;
@@ -76,7 +102,10 @@ lit_call(Lit func, Lit args, int ret_type)
         case NUM: l = double_to_lit(result.d); break;
         case DEC: l = int_to_lit(result.i); break;
         case STR: l = str_to_lit(result.s); break;
-        default: assert(0 && "Unhandled return type");
+        default:
+                printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
+                       __FUNCTION__, ret_type, __FILE__, __LINE__);
+                exit(127);
         }
 
         call_free(c);
@@ -88,7 +117,7 @@ lit_cast(Lit a, int type)
 {
         switch (a.type) {
         case NUM:
-                if (type == NUM) return a;
+                if (type == NUM) return lit_dup(a);
                 if (type == DEC) return int_to_lit((int) a.as.num);
                 if (type == STR) {
                         char *buf = NULL;
@@ -105,7 +134,7 @@ lit_cast(Lit a, int type)
                 exit(127);
 
         case DEC:
-                if (type == DEC) return a;
+                if (type == DEC) return lit_dup(a);
                 if (type == NUM) return double_to_lit((double) a.as.dec);
                 if (type == STR) {
                         char *buf = NULL;
@@ -124,7 +153,7 @@ lit_cast(Lit a, int type)
         case STR:
                 if (type == NUM) return double_to_lit(strtod(a.as.str, 0));
                 if (type == DEC) return int_to_lit(atoi(a.as.str));
-                if (type == STR) return a;
+                if (type == STR) return lit_dup(a);
                 if (type == LIST) {
                         Lit l = lit_list();
                         lit_list_add(l, a);
@@ -143,7 +172,7 @@ lit_cast(Lit a, int type)
                         return double_to_lit((double) a.as.list->data[0].as.num);
                 }
                 if (a.as.list->data->type != type) return LIT_ERROR;
-                return a.as.list->data[0];
+                return lit_dup(a.as.list->data[0]);
 
         default:
                 printf("Compiler Panic! %s case %d not handled (at %s:%d)\n",
@@ -168,6 +197,15 @@ Lit
 str_to_lit(char *s)
 {
         return (Lit) { .type = STR, .as.str = s };
+}
+
+int
+lit_print_more(Lit a)
+{
+        int n = 0;
+        n += lit_print(a);
+        n += printf(", type: %d", a.type);
+        return n;
 }
 
 int
@@ -211,7 +249,7 @@ lit_neq(Lit a, Lit b)
 
         switch (a.type) {
         case NUM: return a.as.num != b.as.num;
-        case DEC: return a.as.num != b.as.num;
+        case DEC: return a.as.dec != b.as.dec;
         case STR: return strcmp(a.as.str, b.as.str);
         case LIST: {
                 if (a.as.list->count != b.as.list->count) return true;

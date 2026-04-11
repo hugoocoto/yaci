@@ -3,9 +3,6 @@
 #include <unistd.h>
 
 #include "flag.h"
-#include "ts.h"
-#include <readline/history.h>
-#include <readline/readline.h>
 
 typedef void *YY_BUFFER_STATE;
 
@@ -21,9 +18,13 @@ int verbose;
 int echo;
 int colorize;
 
-#define PROMPT ">> "
+const char *PROMPT;
 
+#ifndef NO_READLINE
 /* ------ readline custom completion functions ------ */
+
+#include <readline/history.h>
+#include <readline/readline.h>
 
 const char *compl_dict[] = {
         "exit", "quit", "load", "clear", "verbose", "echo", NULL
@@ -71,10 +72,6 @@ repl()
         rl_bind_key('\t', rl_complete);
         rl_attempted_completion_function = compl_custom;
 
-        extern void yy_init_owner_queue();
-        extern void yy_free_owner_queue();
-        yy_init_owner_queue();
-
         char *input;
         while (!should_quit) {
                 input = readline(PROMPT);
@@ -91,14 +88,25 @@ repl()
                 }
                 free(input);
         }
-
-        yy_free_owner_queue();
 }
+
+#else // NO_READLINE
+
+void
+repl()
+{
+        printf("%s", PROMPT);
+        while (!should_quit) {
+                yyparse();
+                // todo : fix prompting in no-readline mode
+        }
+}
+
+#endif // !NO_READLINE
 
 int
 parse(char *filename)
 {
-        set_owner(strdup(filename)); // how i'm going to free this?
         if (open_file(filename)) {
                 perror(filename);
                 return 1;
@@ -112,10 +120,12 @@ void
 exit_handler(int sig)
 {
         (void) sig;
+#ifndef NO_READLINE
         putchar('\n'); /* Unsecure but it works */
         rl_on_new_line();
         rl_replace_line("", 0);
         rl_redisplay();
+#endif
 }
 
 int
@@ -133,6 +143,7 @@ main(int argc, char **argv)
         flag_add(&verbose_v, "--verbose", "-v", .help = "Give hints and show a little more info");
         flag_add(&noecho_v, "--noecho", "-E", .help = "Do not echo result");
         flag_add(&nocolor_v, "--nocolor", "-C", .help = "Do not use colors");
+        flag_add(&PROMPT, "--prompt", .help = "REPL prompt", .nargs = 1, .defaults = ">> ");
 
         if (flag_parse(&argc, &argv)) {
                 flag_show_help(STDOUT_FILENO);
@@ -143,12 +154,16 @@ main(int argc, char **argv)
         colorize = isatty(STDOUT_FILENO) ? !nocolor_v : 0;
         verbose = !!verbose_v;
 
+        extern void yy_init_owner_queue();
+        extern void yy_free_owner_queue();
+
+        yy_init_owner_queue();
         for (int i = 1; i < argc; i++) {
                 if (verbose) printf("[YACI] Filename: %s\n", argv[i]);
                 parse(argv[i]);
         }
-
         if (!norepl_v) repl();
+        yy_free_owner_queue();
 
         yylex_destroy();
         flag_free();

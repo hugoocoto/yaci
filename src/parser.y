@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <assert.h>
 
 #include "ts.h"
 #include "lit.h"
 #include "da.h"
+#include "qq.h"
 
 extern int verbose;
 extern int colorize;
@@ -21,6 +23,10 @@ extern int open_file(char*);
 extern void close_file();
 extern int yyerror(const char*, ...);
 extern int yyhint(const char*, ...);
+extern Lit func_call(TS_Entry*, Lit, int);
+extern int INIT_ASSIGN;
+
+QQ(Lit) scope_constants = {0};
 
 %}
 
@@ -57,6 +63,8 @@ extern int yyhint(const char*, ...);
 %token OPEN        
 %token POLL        
 %token ARROW
+%token DEL
+%token ALL
 
 %type <val> expr
 %type <val> strange_quote_error
@@ -76,8 +84,19 @@ extern int yyhint(const char*, ...);
 
 %%
 
-program: 
-    | program line 
+//  idk where to add the prompt
+//  {
+//       #ifndef NO_READLINE
+//       extern const char* PROMPT;
+//       printf("%s", PROMPT);
+//       #endif
+//  }
+
+program:
+    | program line { 
+        for_qq_each(e, scope_constants){ lit_free(*e); }
+        scope_constants.count = 0;
+    }
     ;
 
 line: 
@@ -95,6 +114,19 @@ line:
     | WORKSPACE '\n' { ts_print(); }
     | WORKSPACE VAR '\n' { ts_print_entry($2); }
     | WORKSPACE TYPE '\n' { ts_print_by_type($2); }
+    | WORKSPACE PATH '\n' { ts_print_by_owner($2.as.str); qqpush(&scope_constants, $2); }
+    | WORKSPACE STR '\n' { ts_print_by_owner($2.as.str); qqpush(&scope_constants, $2); }
+
+    | DEL '\n' { 
+        yyerror("del expects an action");
+        if (verbose) yyhint("Write one of `all`, 'owner' or a variable"); 
+        if (verbose) yyhint("Write ./ and <tab><tab> to get suggestions"); 
+        YYERROR; 
+    }
+    | DEL ALL '\n' { ts_del_all(); }
+    | DEL VAR '\n' { ts_del_entry($2); }
+    | DEL PATH '\n' { ts_del_by_owner($2.as.str); qqpush(&scope_constants, $2); }
+    | DEL STR '\n' { ts_del_by_owner($2.as.str); qqpush(&scope_constants, $2); }
 
     | QUIT '\n' {
         fflush(stdout);
@@ -104,9 +136,9 @@ line:
     }
 
     | LOAD VAR '\n' { if (load($2->value.as.str)) YYERROR; }
-    | LOAD PATH '\n' { if (load($2.as.str)) YYERROR; }
+    | LOAD PATH '\n' { qqpush(&scope_constants, $2); if (load($2.as.str)) YYERROR; }
     | OPEN VAR '\n' { if (link_lib($2->value.as.str)) YYERROR; }
-    | OPEN PATH '\n' { if (link_lib($2.as.str)) YYERROR; }
+    | OPEN PATH '\n' { qqpush(&scope_constants, $2); if (link_lib($2.as.str)) YYERROR; }
     | VERBOSE TRUE '\n' { verbose = 1; }
     | VERBOSE FALSE '\n' { verbose = 0; }
     | T_ECHO TRUE '\n' { echo = 1; }
@@ -121,25 +153,29 @@ line:
     | VERBOSE '\n' { yyerror("verbose expects one of `on`, `off`, `true` or `false`"); YYERROR; }
     | T_ECHO '\n' { yyerror("echo expects one of `on`, `off`, `true` or `false`"); YYERROR; }
     | HELP '\n' { yyerror("Sorry, you're on your own"); YYERROR; }
+
+  // Error reported in strange_quote_error
     | LOAD strange_quote_error '\n' { }
     | OPEN strange_quote_error '\n' { }
     | VERBOSE strange_quote_error '\n' { }
     | T_ECHO strange_quote_error '\n' { }
     | strange_quote_error '\n' { }
-    ;
 
 expr: 
     NUM { $$ = $1; }
     | DEC { $$ = $1; }
-    | STR { $$ = $1; }
-    | FUN { $$ = $1; }
-    | PATH { $$ = $1; }
+    | STR { $$ = $1; qqpush(&scope_constants, $$); }
+    | FUN { $$ = $1; qqpush(&scope_constants, $$); }
+    | PATH { $$ = $1; qqpush(&scope_constants, $$); }
     | '{' list '}' { $$ = $2; }
     | VAR { 
-        if (!$1->assigned) { 
-            yyerror("Variable `%s` not defined", $1->value.as.str); 
-            if (verbose) yyhint("Maybe you want to type `%s = 1`", $1->value.as.str);
+        if ($1->assigned == A_INIT) { 
+            yyerror("Variable `%s` not defined", $1->key); 
+            if (verbose) yyhint("Maybe you want to type `%s = 1`", $1->key);
             YYERROR; 
+        }
+        else if ($1->assigned == A_NONE){
+            assert(0 && "var assigned type is A_NONE");
         }
         $$ = $1->value; 
     }
@@ -162,13 +198,15 @@ expr:
 
     | expr AS TYPE { 
         $$ = lit_cast($1, $3); 
+        qqpush(&scope_constants, $$);
     }
 
+    // assignment
     | VAR '=' expr { 
         if ($1->constant) { yyerror("Assigning to a constant var"); YYERROR; }
-        if (!$1->assigned) { $1->assigned = true; }
-        lit_free($1->value);
-        $$ = $1->value = $3;
+        if ($1->assigned != A_NONE) { lit_free($1->value); } 
+        $1->assigned = A_VALUE;
+        $$ = $1->value = lit_dup($3);
     }
     | VAR '=' '\n' { 
         yyerror("Assign operation needs a value");
@@ -179,9 +217,10 @@ expr:
 
     | CONST VAR '=' expr { 
         if ($2->constant) { yyerror("Assigning to a constant var"); YYERROR; }
-        if ($2->assigned) { yyerror("Can't change var signature"); YYERROR; }
-        $2->assigned = true;
+        if ($2->assigned == A_VALUE) { yyerror("Can't change var signature"); YYERROR; }
+        if ($2->assigned != A_NONE) { lit_free($2->value); } 
         $2->constant = true;
+        $2->assigned = A_VALUE;
         $$ = $2->value = $4;
     }
     | CONST VAR '=' '\n' { 
@@ -191,57 +230,9 @@ expr:
         YYERROR;
     }
 
-    | VAR '(' list ')' ARROW TYPE { 
-        if (!$1->assigned){
-            $$ = lit_call($1->value, $3, $6); 
-            if ($$.type == ERROR){
-                yyerror("Couldn't find any function with this signature"); 
-                if (verbose) yyhint("Make sure %s exists and it's linked",
-                                     $1->value.as.str); 
-                YYERROR; 
-            }
-            $1->callable = true;
-            $1->assigned = true;
-            $1->constant = true;
-            $1->type = FUN;
-            $1->value.type = FUN;
-        }
-        else if (!$1->callable && $1->assigned) { 
-            yyerror("Calling a non-callable var"); 
-                if (verbose) yyhint("You can only call functions from linked "
-                                     "libraries"); 
-            YYERROR; 
-        } 
-        else {
-            $$ = lit_call($1->value, $3, $6); // returns double by default
-        }
-    }
-
-    | VAR '(' list ')' { 
-        if (!$1->assigned){
-            $$ = lit_call($1->value, $3, NUM); // returns double by default
-            if ($$.type == ERROR){
-                yyerror("Couldn't find any function with this signature"); 
-                if (verbose) yyhint("Make sure %s exists and it's linked",
-                                     $1->value.as.str); 
-                YYERROR; 
-            }
-            $1->callable = true;
-            $1->assigned = true;
-            $1->constant = true;
-            $1->type = FUN;
-            $1->value.type = FUN;
-        }
-        else if (!$1->callable && $1->assigned) { 
-            yyerror("Calling a non-callable var"); 
-                if (verbose) yyhint("You can only call functions from linked "
-                                     "libraries"); 
-            YYERROR; 
-        } 
-        else {
-            $$ = lit_call($1->value, $3, NUM); 
-        }
-    }
+    // calls
+    | VAR '(' list ')' ARROW TYPE { $$ = func_call($1, $3, $6); if($$.type == ERROR) YYERROR; }
+    | VAR '(' list ')' { $$ = func_call($1, $3, NUM); if($$.type == ERROR) YYERROR; }
     | VAR '(' list '\n' { 
         yyerror("Unclosed parenthesis");
         if (verbose) yyhint("Don't forget to close it as in `%s(...)`", 
@@ -283,8 +274,8 @@ silentexpr:  { }
     | expr '^' expr  { }
     | '(' expr ')'  { }
 
-list: { $$ = lit_list(); }
-    | nzlist { $$ = $1; }
+list: { $$ = lit_list(); qqpush(&scope_constants, $$); }
+    | nzlist { $$ = $1; qqpush(&scope_constants, $$); }
 
 nzlist:
     expr { $$ = lit_list_add(lit_list(), $1); }
@@ -301,7 +292,6 @@ nzlist:
                              "values, never at the start of the list");
         YYERROR;
     }
-    ;
 
 strange_quote_error: 
     '`' silentexpr '`' { 
@@ -310,7 +300,8 @@ strange_quote_error:
                              "text between them is literally what you have to "
                              "type. Remove them");
         YYERROR;
-     }
+    }
+    ;
 
 %%
 
@@ -348,7 +339,7 @@ int yyhint(const char*fmt, ...)
 }
 
 int load(char* s){
-    if(open_file(s)){
+    if (open_file(s)) {
         yyerror("file `%s` not found", s);
         yyhint("Write load ./<tab><tab> to get suggestions");
         return 1;
@@ -357,11 +348,38 @@ int load(char* s){
 }
 
 int link_lib(char* s){
-    if(!dlopen(s, RTLD_NOW | RTLD_GLOBAL)){
+    if (!dlopen(s, RTLD_NOW | RTLD_GLOBAL)) {
         yyerror("%s\n", s, dlerror());
         yyhint("Use the `./` prefix for local libraries");
         yyhint("Use no prefix for system ones");
         return 1;
     }
     return 0;
+}
+
+Lit func_call(TS_Entry* var, Lit arg_list, int ret_type)
+{
+    Lit ret;
+    if (var->assigned != A_VALUE){
+        ret = lit_call(var->value, arg_list, ret_type); 
+        if (ret.type == ERROR){
+            yyerror("Couldn't find any function with this signature"); 
+            if (verbose) yyhint("Make sure %s exists and it's linked", var->value.as.str); 
+            return (Lit){ .type = ERROR };
+        }
+        var->callable = true;
+        var->assigned = A_VALUE ;
+        var->constant = true;
+        var->type = FUN;
+        var->value.type = FUN;
+        return ret;
+    }
+
+    else if (!var->callable && var->assigned == A_VALUE) { 
+        yyerror("Calling a non-callable var"); 
+            if (verbose) yyhint("You can only call functions from linked libraries"); 
+        return (Lit){ .type = ERROR };
+    } 
+
+    return lit_call(var->value, arg_list, ret_type); 
 }

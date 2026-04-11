@@ -23,3 +23,8 @@ a eq! c;
 1 as dec as num eq! 1;
 1.0 as num as dec eq! 1.0;
 1.0 as dec as num eq! 1.0;
+
+1 as num eq! 1;
+1 as float eq! 1;
+1 as dec eq! 1;
+1 as int eq! 1;

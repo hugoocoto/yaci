@@ -99,6 +99,7 @@
         }
 
 #define LIST_OF_UNSECURE_SYSTEM_LIBS()              \
+        X("math.h", LIBM_SO)                        \
         X("ld.h", LD_SO)                            \
         X("anl.h", LIBANL_SO)                       \
         X("brokenlocale.h", LIBBROKENLOCALE_SO)     \
@@ -107,7 +108,6 @@
         X("dl.h", LIBDL_SO)                         \
         X("gcc_s.h", LIBGCC_S_SO)                   \
         X("mvec.h", LIBMVEC_SO)                     \
-        X("math.h", LIBM_SO)                        \
         X("nsl.h", LIBNSL_SO)                       \
         X("nss_compat.h", LIBNSS_COMPAT_SO)         \
         X("nss_db.h", LIBNSS_DB_SO)                 \

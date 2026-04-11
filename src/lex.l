@@ -2,10 +2,14 @@
 
 %{
 #include <assert.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
 
 #include "lit.h"
 #include "parser.tab.h"
 #include "ts.h"
+#include "qq.h"
 
 #include "libnames.h"
 
@@ -18,15 +22,21 @@ extern int yyerror(const char*, ...);
 extern int yyhint(const char*, ...);
 extern char *trim_right(char *c);
 extern char *trim_chars(char *s, char *cs);
+extern int INIT_ASSIGN;
 
-DA(const char*) queue = {0};
+QQ(const char*) queue = {0};
 
-const char* q_top() { if(queue.count <= 0){ assert(0 && "qtop"); } return queue.data[queue.count - 1]; }
-void q_push(const char *c) { da_append(&queue, (c)); }
-void q_pop() { if(queue.count <= 0){ assert(0 && "qpop"); } da_remove(&queue, queue.count - 1); }
+void yy_init_owner_queue(){ 
+    qqpush(&queue, strdup(OWNER_REPL)); 
+    set_owner(qqtop(&queue)); 
+}
 
-void yy_init_owner_queue(){ q_push(OWNER_REPL); set_owner(q_top()); }
-void yy_free_owner_queue(){ da_destroy(&queue); }
+void yy_free_owner_queue(){ 
+    for_da_each(e, queue){
+        free((void*) *e);
+    }
+    da_destroy(&queue); 
+}
 
 %}
 
@@ -47,7 +57,6 @@ CHAR "'"[^']"'"
 /* if it's not closed it raises unclosed string error */
 
 /* strings */
-STR {DQSTR}|{SQSTR}
 SQSTR "'"{SQSTRCHR}*"'"
 DQSTR "\""{DQSTRCHR}*"\""
 SQSTRCHR {ESCSEQ}|[^\\'\n]
@@ -91,6 +100,7 @@ PLUS "plus"
 LET "let"
 BE "be"
 ARROW "->"
+ALL "all"
 
 /* types */
 TYPE_STR "str"
@@ -99,16 +109,15 @@ TYPE_DEC "dec"|"int"
 TYPE_LIST "list"
 
 /* commands */
-CLEAR [Cc][Ll][Ee][Aa][Rr]{PAR_OR_NOT}
-QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt])){PAR_OR_NOT}
-WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?{PAR_OR_NOT}
+CLEAR [Cc][Ll][Ee][Aa][Rr]
+QUIT (([Qq][Uu][Ii][Tt])|([Ee][Xx][Ii][Tt]))
+WORKSPACE [Ww]([Oo][Rr][Kk])?[Ss]([Pp][Aa][Cc][Ee])?
 LOAD [Ll][Oo][Aa][Dd]
 OPEN ([Oo][Pp][Ee][Nn])|([Ll][Ii][Nn][Kk])
 VERBOSE [Vv][Ee][Rr][Bb][Oo][Ss][Ee]
 ECHO [Ee][Cc][Hh][Oo]
-HELP [Hh][Ee][Ll][Pp]{PAR_OR_NOT}
-
-PAR_OR_NOT ("("{WS}?")")?
+HELP [Hh][Ee][Ll][Pp]
+DEL [Dd][Ee][Ll]([Ee][Tt][Ee])?
 
 %%
 {COMMENT}   { return '\n'; }
@@ -130,7 +139,8 @@ PAR_OR_NOT ("("{WS}?")")?
 {OPEN}      { return OPEN; }
 {HELP}      { return HELP; }
 {ARROW}     { return ARROW; }
-
+{DEL}       { return DEL; }
+{ALL}       { return ALL; }
 {TRUE}      { return TRUE; }
 {FALSE}     { return FALSE; }
 
@@ -145,9 +155,11 @@ PAR_OR_NOT ("("{WS}?")")?
 {DECIMAL}   { yylval.val = double_to_lit(strtod(yytext, NULL)); return NUM; }
 {CHAR}      { yylval.val = int_to_lit(*yytext); return DEC; }
 
-{STR}       { yylval.val = str_to_lit(strdup(trim_chars(yytext, "\""))); return STR; }
-{PATH}      { LIST_OF_UNSECURE_SYSTEM_LIBS();
-              yylval.val = str_to_lit(strdup(trim_chars(yytext, "\"<>"))); 
+{SQSTR}     { yylval.val = str_to_lit(strdup(trim_chars(yytext, "'"))); return STR; }
+{DQSTR}     { yylval.val = str_to_lit(strdup(trim_chars(yytext, "\""))); return STR; }
+{PATH}      { 
+              LIST_OF_UNSECURE_SYSTEM_LIBS(); // from libnames.h
+              yylval.val = str_to_lit(strdup(trim_chars(yytext, "<>"))); 
               return PATH; 
             }
 {ID}        { yylval.tptr = register_id(); return VAR; }
@@ -163,31 +175,29 @@ PAR_OR_NOT ("("{WS}?")")?
 
 <<EOF>> {
     if (include_depth > 0) {
-        q_pop(); 
+        free((void *) qqtop(&queue));
+        qqpop(&queue); 
         include_depth--;
         yypop_buffer_state();
         if (!YY_CURRENT_BUFFER) {
             yyterminate();
         }
-        set_owner(q_top());
+        set_owner(qqtop(&queue));
     } else {
         yyterminate();
     }
 }
 %%
 
-#include <string.h>
-#include <ctype.h>
-
 int open_file(char *filename) 
 {
-    if (filename == NULL) return 0;
+    if (filename == NULL) return 1;
 
     FILE* f = fopen(filename, "r");
     if (f == NULL) return 1;
 
-    q_push(strdup(filename)); 
-    set_owner(q_top());
+    qqpush(&queue, strdup(filename)); 
+    set_owner(qqtop(&queue));
 
     YY_BUFFER_STATE file_buffer = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(file_buffer);
@@ -233,6 +243,7 @@ TS_Entry *register_id()
         if (!entry) {
                 ts_add(yytext, (TS_Entry) { 
                     .type = VAR, 
+                    .assigned = A_INIT,
                     .value = str_to_lit(strdup(yytext)),
                 });
                 entry = ts_get(yytext);
