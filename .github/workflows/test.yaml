@@ -26,6 +26,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Build tests
         run: |
-          brew install readline
+          brew install readline libffi
           make CC=${{ matrix.cc }}
           make test
