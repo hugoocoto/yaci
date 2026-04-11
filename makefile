@@ -1,13 +1,19 @@
 OUT = yaci
 CC = cc
 OBJ_DIR = obj
-FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline libffi` -fsanitize=address,null 
+FLAGS = -std=c99 -Wall -Wextra -g -Werror `pkg-config --cflags readline libffi` -fsanitize=address,null $(NO_ERR)
 LIBS = -lm -lffi `pkg-config --libs readline libffi`
 INCLUDES = -Isrc
 
 SRC = $(wildcard src/*.c) src/lex.c src/parser.tab.c
 OBJ = $(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRC)) obj/lex.o obj/parser.tab.o
 HEADERS = $(wildcard src/*.h) 
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	# macos thing
+	FLAGS += -Wno-sign-compare 
+endif
 
 .PHONY: all clean package compile test cleanall
 
