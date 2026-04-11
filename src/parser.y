@@ -1,5 +1,3 @@
-%token-table
-
 %{
 #include <stdio.h>
 #include <stdlib.h>
