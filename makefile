@@ -47,6 +47,11 @@ cleanall: clean
 test: 
 	./tests/all.sh
 
+docs: docs/yaci-es.pdf
+
+docs/yaci-es.pdf: docs/yaci-es.typ
+	cd docs/ && make
+
 package: $(OUT).zip
 
 $(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* ./misc-tests/*
