@@ -26,9 +26,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Build tests
         run: |
-          export LDFLAGS="-L/opt/homebrew/opt/libffi/lib"
-          export CPPFLAGS="-I/opt/homebrew/opt/libffi/include"
-          export PKG_CONFIG_PATH="/opt/homebrew/opt/libffi/lib/pkgconfig"
-          brew install readline libffi
+          export PKG_CONFIG_PATH="/opt/homebrew/opt/libffi/lib/pkgconfig:/opt/homebrew/opt/readline/lib/pkgconfig"
+          export LDFLAGS="-L/opt/homebrew/opt/libffi/lib -L/opt/homebrew/opt/readline/lib"
+          export CPPFLAGS="-I/opt/homebrew/opt/libffi/include -I/opt/homebrew/opt/readline/include"
           make CC=${{ matrix.cc }}
           make test
