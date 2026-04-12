@@ -128,3 +128,10 @@ make
 | `--nocolor` | `-C` | Disable colored output |
 | `--prompt X` | | Use `X` as the REPL prompt (default: `>> `) |
 | `--help` | `-h` | Show help and exit |
+
+
+### Things that are not done
+
+- Some things are not properly free on errors
+- Path is relative to the interpreter, not to the file
+- There are more than one errors, but I don't find them yet.

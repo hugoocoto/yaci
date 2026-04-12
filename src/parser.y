@@ -87,7 +87,10 @@ program:
     | program line { 
         state_reset();
     }
-    ;
+    | error { 
+        if (verbose) yyhint("Type `help` for aditional help"); 
+        state_reset();
+    }
 
 line: 
     expr '\n' { 
@@ -99,10 +102,6 @@ line:
 
     | ';' '\n' { }
     | '\n' { }
-    | error { 
-        if (verbose) yyhint("Type `help` for aditional help"); 
-        state_reset();
-    }
 
     | CLEAR '\n' { printf("\033[H\033[2J"); }
     | WORKSPACE '\n' { ts_print(); }
