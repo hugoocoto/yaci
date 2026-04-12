@@ -54,5 +54,7 @@ docs/yaci-es.pdf: docs/yaci-es.typ
 
 package: $(OUT).zip
 
-$(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* ./misc-tests/*
+MISC = ./misc-tests/makefile ./misc-tests/pollNotWindowShouldClose.c ./misc-tests/raylib.yc
+
+$(OUT).zip: $(SRC) $(HEADERS) makefile README.md tests/* $(MISC) docs/* 
 	zip $(OUT).zip $^ --update
